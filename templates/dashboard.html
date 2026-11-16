@@ -4,66 +4,49 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token }}">
-<title>AGNTC Trader — Overview</title>
+<title>AGNTC Trader — {{ page.title }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="dashboard-page">
-<a class="skip-link" href="#overview">Skip to dashboard</a>
+<body class="dashboard-page" data-page="{{ page.id }}">
+<a class="skip-link" href="#pageContent">Skip to page content</a>
 <nav class="sidebar" id="sidebar" aria-label="Main navigation">
-  <a class="logo" href="#overview"><span class="mark">Au</span><span>AGNTC<br>TRADER</span></a>
+  <a class="logo" href="{{ url_for('dashboard') }}"><span class="mark">Au</span><span>AGNTC<br>TRADER</span></a>
   <p class="side-label">Main navigation</p>
   <div class="side-links">
-    <a class="side-link active" href="#overview" aria-current="page"><i data-lucide="layout-dashboard"></i><span>Overview</span></a>
-    <a class="side-link" href="#terminal"><i data-lucide="candlestick-chart"></i><span>Trading Terminal</span><span class="side-num">02</span></a>
-    <a class="side-link" href="#market"><i data-lucide="chart-no-axes-combined"></i><span>Market Watch</span><span class="side-num">03</span></a>
-    <a class="side-link" href="#analysis"><i data-lucide="sparkles"></i><span>AI Analysis</span><span class="side-num">04</span></a>
-    <a class="side-link" href="#automation"><i data-lucide="bot"></i><span>Automated Trading</span><span class="side-num">05</span></a>
-    <a class="side-link" href="#positions"><i data-lucide="layers-3"></i><span>Open Positions</span><span class="side-num">06</span></a>
-    <a class="side-link" href="#pending-orders"><i data-lucide="list-plus"></i><span>Pending Orders</span><span class="side-num">07</span></a>
-    <a class="side-link" href="#history"><i data-lucide="history"></i><span>Trade History</span><span class="side-num">08</span></a>
-    <a class="side-link" href="#analytics"><i data-lucide="chart-no-axes-column-increasing"></i><span>Performance Analytics</span><span class="side-num">09</span></a>
-    <a class="side-link" href="#risk"><i data-lucide="shield-check"></i><span>Risk Management</span><span class="side-num">10</span></a>
-    <a class="side-link" href="#calendar"><i data-lucide="calendar-days"></i><span>Economic Calendar</span><span class="side-num">11</span></a>
-    <a class="side-link" href="#accounts"><i data-lucide="wallet"></i><span>Account Management</span><span class="side-num">12</span></a>
-    <a class="side-link" href="#reports"><i data-lucide="file-chart-column"></i><span>Reports</span><span class="side-num">13</span></a>
-    <a class="side-link" href="#notifications"><i data-lucide="bell"></i><span>Notifications</span><span class="side-num">14</span></a>
-    <a class="side-link" href="#settings"><i data-lucide="settings-2"></i><span>Settings</span><span class="side-num">15</span></a>
+    {% for item in pages %}
+    <a class="side-link{% if item.id == page.id %} active{% endif %}" href="{% if item.id == 'overview' %}{{ url_for('dashboard') }}{% else %}{{ url_for('dashboard_page', page_id=item.id) }}{% endif %}"{% if item.id == page.id %} aria-current="page"{% endif %}>
+      <i data-lucide="{{ item.icon }}"></i><span>{{ item.title }}</span><span class="side-num">{{ "%02d"|format(loop.index) }}</span>
+    </a>
+    {% endfor %}
   </div>
   <div class="side-bottom">
-    <div class="side-connection"><span class="dot off" id="sideConnDot"></span><span id="sideConnText">Connecting to MT5</span></div>
-    <form action="/logout" method="POST"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn g sm logout-btn" type="submit"><i data-lucide="log-out"></i>Log out</button></form>
+    <div class="side-connection"><span class="dot off" id="sideConnDot"></span><span id="sideConnText">Checking MT5</span></div>
+    <form action="{{ url_for('logout') }}" method="POST"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn g sm logout-btn" type="submit"><i data-lucide="log-out"></i>Log out</button></form>
   </div>
 </nav>
 
-<main class="app-main">
+<div class="app-main">
   <header class="topbar">
     <button class="mobile-menu" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar"><i data-lucide="menu"></i></button>
-    <div><span class="eyebrow">Desktop application · Main navigation</span><h1>Overview</h1></div>
+    <div><span class="eyebrow">Desktop application · Main navigation</span><h1>{{ page.title }}</h1></div>
     <div class="topbar-actions">
-      <div class="connection-badge"><span class="dot off" id="connDot"></span><span id="connText">Connecting</span></div>
-      <label class="account-select-wrap" for="accountSelector"><span>Trading account</span><select id="accountSelector" disabled><option>Checking connection…</option></select></label>
+      <div class="connection-badge"><span class="dot off" id="connDot"></span><span id="connText">Checking</span></div>
+      <label class="account-select-wrap" for="accountSelector"><span>Active MT5 account</span><select id="accountSelector" disabled><option>Checking connection…</option></select></label>
     </div>
   </header>
 
-  <div class="content">
-    <section class="overview-section" id="overview">
+  <main class="content" id="pageContent">
+    {% if page.id == "overview" %}
+    <section class="page-view">
       <div class="welcome-row">
-        <div><p class="section-kicker">Account snapshot</p><h2>Your trading account</h2><p class="sub">Balance, equity and connection health for the active MT5 terminal account.</p></div>
-        <span class="pill tag" id="modeBadge">MT5 · Analysis mode</span>
+        <div><p class="section-kicker">Account snapshot</p><h2>Your trading account</h2><p class="sub">A clear view of your current balance, equity and connection health.</p></div>
+        <span class="pill tag" id="modeBadge">MT5 · Checking mode</span>
       </div>
       <div class="connection-grid">
-        <article class="connection-card card">
-          <div class="connection-icon"><i data-lucide="monitor-check"></i></div>
-          <div><span>MetaTrader 5 terminal</span><b id="mt5Status">Checking connection</b><small id="mt5Detail">Waiting for terminal status</small></div>
-          <span class="status-chip pending" id="mt5Chip">Checking</span>
-        </article>
-        <article class="connection-card card">
-          <div class="connection-icon broker-icon">EX</div>
-          <div><span>Exness / broker server</span><b id="brokerStatus">Checking connection</b><small id="brokerDetail">Waiting for broker status</small></div>
-          <span class="status-chip pending" id="brokerChip">Checking</span>
-        </article>
+        <article class="connection-card card"><div class="connection-icon"><i data-lucide="monitor-check"></i></div><div><span>MetaTrader 5 terminal</span><b id="mt5Status">Checking connection</b><small id="mt5Detail">Waiting for terminal status</small></div><span class="status-chip pending" id="mt5Chip">Checking</span></article>
+        <article class="connection-card card"><div class="connection-icon broker-icon">EX</div><div><span>Exness / broker server</span><b id="brokerStatus">Checking connection</b><small id="brokerDetail">Waiting for broker status</small></div><span class="status-chip pending" id="brokerChip">Checking</span></article>
       </div>
       <div class="stats" style="margin-top:16px">
         <article class="card stat-card"><span><i data-lucide="landmark"></i>Balance</span><b id="balance">--</b><small>Broker-reported funds</small></article>
@@ -73,206 +56,268 @@
       </div>
       <article class="card pad today-card">
         <div class="head"><div><h3>Today at a glance</h3><p>Closed trades recorded by the broker today.</p></div><span class="pill">TODAY</span></div>
-        <div class="perf">
-          <div><span>Realised P/L</span><b id="todayProfit">--</b></div>
-          <div><span>Wins</span><b id="wins">0</b></div>
-          <div><span>Losses</span><b id="losses">0</b></div>
-          <div><span>Win rate</span><b id="winRate">0%</b></div>
-        </div>
+        <div class="perf"><div><span>Realised P/L</span><b id="todayProfit">--</b></div><div><span>Wins</span><b id="wins">--</b></div><div><span>Losses</span><b id="losses">--</b></div><div><span>Win rate</span><b id="winRate">--</b></div></div>
       </article>
+      <div class="quick-links">
+        <a class="quick-link card" href="{{ url_for('dashboard_page', page_id='market-watch') }}"><i data-lucide="chart-no-axes-combined"></i><span><b>Market Watch</b><small>Live XAUUSD chart and timeframes</small></span><i data-lucide="arrow-up-right"></i></a>
+        <a class="quick-link card" href="{{ url_for('dashboard_page', page_id='open-positions') }}"><i data-lucide="layers-3"></i><span><b>Open Positions</b><small>Review active trades and floating P/L</small></span><i data-lucide="arrow-up-right"></i></a>
+        <a class="quick-link card" href="{{ url_for('dashboard_page', page_id='trade-history') }}"><i data-lucide="history"></i><span><b>Trade History</b><small>View recent closed trade executions</small></span><i data-lucide="arrow-up-right"></i></a>
+      </div>
     </section>
 
-    <section class="module-section" id="terminal">
-      <div class="section-heading"><div><p class="section-kicker">02 · Trading Terminal</p><h2>XAUUSD trading desk</h2></div><button class="btn p" id="scanBtn" onclick="scanMarket()"><i data-lucide="scan-search"></i>Scan for setup</button></div>
-      <article class="card pad" id="market">
-        <div class="eyebrow"><i data-lucide="chart-no-axes-combined"></i>Market Watch · XAUUSD</div>
-        <div class="mkt">
-          <div><span>Symbol</span><b id="symbol">XAUUSD</b></div><div><span>Bid</span><b id="bid">--</b></div><div><span>Ask</span><b id="ask">--</b></div>
-          <div><span>Spread (points)</span><b id="spread">--</b></div><div><span>Minimum lot</span><b id="minLot">--</b></div><div><span>Contract size</span><b id="contractSize">--</b></div>
-        </div>
-        <div class="note" id="marketNote">Waiting for MT5 market data…</div>
+    {% elif page.id == "market-watch" or page.id == "trading-terminal" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">{% if page.id == "market-watch" %}Market Watch{% else %}Trading Terminal{% endif %} · {{ trading_symbol }}</p><h2>{% if page.id == "market-watch" %}Gold price chart{% else %}Trading desk{% endif %}</h2><p class="sub">Live broker candles. Select a timeframe to update the chart.</p></div><button class="btn g" type="button" onclick="openMetaTrader()"><i data-lucide="external-link"></i>Open MetaTrader</button></div>
+      <article class="card pad chart-card">
+        <div class="chart-toolbar"><div class="chart-symbol"><span class="symbol-mark">Au</span><div><b>{{ trading_symbol }}</b><small>Gold / US Dollar · <span id="chartStatus">Connecting…</span></small></div></div><div class="timeframes" role="group" aria-label="Chart timeframe">
+          {% for tf in ("M1", "M5", "M15", "M30", "H1", "H4", "D1") %}<button class="timeframe-btn{% if tf == 'M5' %} selected{% endif %}" data-timeframe="{{ tf }}" type="button" aria-pressed="{{ 'true' if tf == 'M5' else 'false' }}">{{ tf }}</button>{% endfor %}
+        </div></div>
+        <div class="chart-quote-row"><div><span>Bid</span><b id="bid">--</b></div><div><span>Ask</span><b id="ask">--</b></div><div><span>Spread</span><b id="spread">--</b></div><div><span>Feed</span><b id="chartMarketStatus">--</b></div></div>
+        <div class="chart-wrap"><canvas id="marketChart" role="img" aria-label="{{ trading_symbol }} candlestick price chart"></canvas><p class="chart-empty" id="chartEmpty">Waiting for MT5 candle data…</p></div>
+        <div class="chart-legend"><span><i class="legend-up"></i>Bullish</span><span><i class="legend-down"></i>Bearish</span><small>Times shown in your local timezone</small></div>
       </article>
-    </section>
-
-    <section class="module-section" id="analysis">
-      <div class="section-heading"><div><p class="section-kicker">04 · AI Analysis</p><h2>Trade ideas</h2><p class="sub">Each setup needs your approval. Risk and margin checks run before any order.</p></div></div>
+      {% if page.id == "trading-terminal" %}
+      <div class="section-heading terminal-actions"><div><p class="section-kicker">Order workflow</p><h2>Review a trade setup</h2><p class="sub">Scan for an XAUUSD setup, then approve or decline it. Approval and risk checks are required before execution.</p></div><button class="btn p" id="scanBtn" type="button" onclick="scanMarket()"><i data-lucide="scan-search"></i>Scan for setup</button></div>
       <article class="card pad" id="signalContainer"><p class="empty">No pending trade ideas.</p></article>
+      {% endif %}
     </section>
 
-    <section class="module-section" id="automation">
-      <div class="section-heading"><div><p class="section-kicker">05 · Automated Trading</p><h2>Execution status</h2></div></div>
-      <article class="card pad automation-card"><span class="status-chip" id="automationChip">Checking</span><p id="automationStatus">Checking live execution configuration…</p><small>Orders are never sent without your approval.</small></article>
+    {% elif page.id == "ai-analysis" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">AI Analysis · XAUUSD</p><h2>Signals and market analysis</h2><p class="sub">Review setup levels and rationale. No order is sent without your approval.</p></div><button class="btn p" id="scanBtn" type="button" onclick="scanMarket()"><i data-lucide="scan-search"></i>Scan market</button></div>
+      <article class="card pad" id="signalContainer"><p class="empty">Loading analysis…</p></article>
     </section>
 
-    <section class="module-section" id="positions">
-      <div class="section-heading"><div><p class="section-kicker">06 · Open Positions</p><h2>Active trades</h2></div></div>
-      <article class="card pad"><div class="tw"><table><thead><tr><th>Ticket</th><th>Side</th><th>Volume</th><th>Entry</th><th>Current</th><th>SL</th><th>TP</th><th>Floating P/L</th></tr></thead><tbody id="positionsBody"><tr><td colspan="8">Waiting for account data…</td></tr></tbody></table></div></article>
+    {% elif page.id == "automated-trading" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Automated Trading</p><h2>Execution status</h2><p class="sub">Current strategy execution configuration and safety controls.</p></div></div>
+      <article class="card pad automation-card"><span class="status-chip pending" id="automationChip">Checking</span><p id="automationStatus">Checking live execution configuration…</p><small>Signals require your explicit approval before any order is sent.</small></article>
+      <article class="card pad info-card"><i data-lucide="shield-check"></i><div><b>Manual approval required</b><p>Automatic unattended trading is not enabled. Orders are only considered after a signal is reviewed and approved.</p></div></article>
     </section>
 
-    <section class="module-section" id="pending-orders">
-      <div class="section-heading"><div><p class="section-kicker">07 · Pending Orders</p><h2>Pending orders</h2></div></div>
-      <article class="card pad empty-module"><i data-lucide="list-plus"></i><p>Pending order monitoring is not available in this build.</p></article>
+    {% elif page.id == "open-positions" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Open Positions</p><h2>Active trades</h2><p class="sub">Live positions on the currently connected account.</p></div><button class="btn g sm" type="button" onclick="loadPositions()">Refresh</button></div>
+      <article class="card pad"><div class="tw"><table><thead><tr><th>Ticket</th><th>Symbol</th><th>Side</th><th>Volume</th><th>Entry</th><th>Current</th><th>SL</th><th>TP</th><th>Floating P/L</th></tr></thead><tbody id="positionsBody"><tr><td colspan="9">Waiting for account data…</td></tr></tbody></table></div></article>
     </section>
 
-    <section class="module-section" id="history">
-      <div class="section-heading"><div><p class="section-kicker">08 · Trade History</p><h2>Historical trades</h2><p class="sub">Recent closed trade executions reported by the connected MT5 account.</p></div><button class="btn g sm" type="button" onclick="loadTradeHistory()">Refresh history</button></div>
-      <article class="card pad"><div class="tw"><table><thead><tr><th>Closed (UTC)</th><th>Ticket</th><th>Symbol</th><th>Side</th><th>Volume</th><th>Close price</th><th>Net P/L</th></tr></thead><tbody id="tradesBody"><tr><td colspan="7">Waiting for account data…</td></tr></tbody></table></div></article>
+    {% elif page.id == "pending-orders" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Pending Orders</p><h2>Orders waiting for execution</h2><p class="sub">Orders currently registered with the connected MT5 account.</p></div><button class="btn g sm" type="button" onclick="loadPendingOrders()">Refresh</button></div>
+      <article class="card pad"><div class="tw"><table><thead><tr><th>Ticket</th><th>Symbol</th><th>Order type</th><th>Volume</th><th>Entry price</th><th>SL</th><th>TP</th><th>Placed (local)</th></tr></thead><tbody id="ordersBody"><tr><td colspan="8">Waiting for account data…</td></tr></tbody></table></div></article>
     </section>
 
-    <section class="module-section" id="analytics">
-      <div class="section-heading"><div><p class="section-kicker">09 · Performance Analytics</p><h2>Daily performance</h2></div></div>
-      <article class="card pad analytics-card"><div class="perf">
-        <div><span>Realised today</span><b id="analyticsProfit">--</b></div><div><span>Closed trades</span><b id="closedTrades">0</b></div>
-        <div><span>Wins</span><b id="analyticsWins">0</b></div><div><span>Win rate</span><b id="analyticsWinRate">0%</b></div>
-      </div><p class="fine">Drawdown, profit factor and equity curve analytics are not available in this build.</p></article>
+    {% elif page.id == "trade-history" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Trade History</p><h2>Historical trades</h2><p class="sub">Recent closed executions reported by the connected account.</p></div><button class="btn g sm" type="button" onclick="loadTradeHistory()">Refresh history</button></div>
+      <article class="card pad"><div class="tw"><table><thead><tr><th>Closed (local)</th><th>Ticket</th><th>Symbol</th><th>Side</th><th>Volume</th><th>Close price</th><th>Net P/L</th></tr></thead><tbody id="tradesBody"><tr><td colspan="7">Waiting for account data…</td></tr></tbody></table></div></article>
     </section>
 
-    <section class="module-section" id="risk">
-      <div class="section-heading"><div><p class="section-kicker">10 · Risk Management</p><h2>Risk controls</h2></div></div>
-      <article class="card pad risk-card"><div><span>Risk per trade</span><b>{{ risk_percent }}%</b></div><div><span>Daily loss limit</span><b>{{ max_daily_loss_percent }}%</b></div><div><span>Maximum open positions</span><b>{{ max_open_positions }}</b></div></article>
+    {% elif page.id == "performance-analytics" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Performance Analytics</p><h2>Trading performance</h2><p class="sub">Realised results from the connected MT5 account.</p></div></div>
+      <div class="stats analytics-stats"><article class="card stat-card"><span>Realised today</span><b id="analyticsToday">--</b><small>Closed deals today</small></article><article class="card stat-card"><span>All-time realised</span><b id="analyticsTotal">--</b><small>Closed deal history</small></article><article class="card stat-card"><span>Today's win rate</span><b id="analyticsWinRate">--</b><small>Winning deals / closed deals</small></article><article class="card stat-card"><span>Trades today</span><b id="analyticsTrades">--</b><small id="analyticsWinsLosses">Wins -- · Losses --</small></article></div>
+      <article class="card pad info-card"><i data-lucide="chart-no-axes-column-increasing"></i><div><b>Extended analytics</b><p>Equity curve, drawdown and profit factor are not calculated in this version.</p></div></article>
     </section>
 
-    <section class="module-section" id="calendar">
-      <div class="section-heading"><div><p class="section-kicker">11 · Economic Calendar</p><h2>Market events</h2></div></div>
-      <article class="card pad empty-module"><i data-lucide="calendar-days"></i><p>Economic calendar data is not connected.</p></article>
+    {% elif page.id == "risk-management" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Risk Management</p><h2>Configured risk controls</h2><p class="sub">Values currently enforced by the server configuration.</p></div></div>
+      <div class="risk-card card pad"><div><span>Risk per trade</span><b>{{ risk_percent }}%</b></div><div><span>Daily loss limit</span><b>{{ max_daily_loss_percent }}%</b></div><div><span>Maximum open positions</span><b>{{ max_open_positions }}</b></div></div>
+      <article class="card pad info-card"><i data-lucide="shield-check"></i><div><b>Approval and execution checks</b><p>Trade approval, spread, margin, position count and daily loss checks run on the server before execution.</p></div></article>
     </section>
 
-    <section class="module-section" id="accounts">
-      <div class="section-heading"><div><p class="section-kicker">12 · Account Management</p><h2>Connected account</h2></div></div>
-      <article class="card pad account-details">
-        <div><span>Account number</span><b id="accountLogin">--</b></div><div><span>Broker server</span><b id="accountServer">--</b></div>
-        <div><span>Currency</span><b id="accountCurrency">--</b></div><div><span>Account selection</span><b>Single MT5 terminal account</b></div>
-        <p>Only the account currently logged in to the MT5 terminal is available. To use another account, switch it in the MT5 terminal first.</p>
-      </article>
+    {% elif page.id == "economic-calendar" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Economic Calendar</p><h2>Upcoming market events</h2><p class="sub">A calendar feed is not currently connected.</p></div></div>
+      <article class="card pad empty-module"><i data-lucide="calendar-days"></i><div><b>Calendar data unavailable</b><p>Connect an economic calendar data source to show event times, currencies and impact levels here.</p></div></article>
     </section>
 
-    <section class="module-section" id="reports">
-      <div class="section-heading"><div><p class="section-kicker">13 · Reports</p><h2>Performance reports</h2></div></div>
-      <article class="card pad empty-module"><i data-lucide="file-chart-column"></i><p>Daily, weekly and monthly report exports are not available in this build.</p></article>
+    {% elif page.id == "account-management" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Account Management</p><h2>Connected broker account</h2><p class="sub">Account information reported by the currently logged-in MT5 terminal.</p></div><button class="btn g" type="button" onclick="openMetaTrader()"><i data-lucide="external-link"></i>Open MetaTrader</button></div>
+      <div class="account-details card pad"><div><span>Account number</span><b id="accountLogin">--</b></div><div><span>Broker server</span><b id="accountServer">--</b></div><div><span>Currency</span><b id="accountCurrency">--</b></div><div><span>Connection</span><b id="accountConnection">Checking</b></div><p>One account is supported at a time. To switch accounts, log in to the other account in the MT5 terminal first. The dashboard will then show that active terminal account.</p></div>
     </section>
 
-    <section class="module-section" id="notifications">
-      <div class="section-heading"><div><p class="section-kicker">14 · Notifications</p><h2>System status</h2></div></div>
-      <article class="card pad automation-card"><span class="status-chip pending" id="noticeChip">Checking</span><p id="noticeText">Checking account and terminal status…</p></article>
+    {% elif page.id == "reports" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Reports</p><h2>Trading reports</h2><p class="sub">Review performance summaries from your current account.</p></div></div>
+      <div class="stats analytics-stats"><article class="card stat-card"><span>Today realised</span><b id="reportToday">--</b><small>Broker closed deals</small></article><article class="card stat-card"><span>Today closed trades</span><b id="reportTrades">--</b><small>From MT5 history</small></article></div>
+      <article class="card pad empty-module"><i data-lucide="file-chart-column"></i><div><b>Report exports are not available yet</b><p>Use Trade History and Performance Analytics to review live account records.</p><a class="btn g sm" href="{{ url_for('dashboard_page', page_id='trade-history') }}">Open Trade History</a></div></article>
     </section>
 
-    <section class="module-section" id="settings">
-      <div class="section-heading"><div><p class="section-kicker">15 · Settings</p><h2>Trading preferences</h2></div></div>
-      <article class="card pad empty-module"><i data-lucide="settings-2"></i><p>Connection and strategy preferences are managed in the server configuration.</p></article>
+    {% elif page.id == "notifications" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Notifications</p><h2>Connection and system status</h2><p class="sub">Current status for the dashboard's broker connection.</p></div></div>
+      <article class="card pad notification-card"><span class="status-chip pending" id="notificationChip">Checking</span><div><b id="notificationTitle">Checking account connection</b><p id="notificationText">Waiting for MT5 status…</p></div></article>
+      <article class="card pad info-card"><i data-lucide="bell"></i><div><b>Trade alerts</b><p>Push and email notifications are not configured in this version.</p></div></article>
     </section>
-  </div>
+
+    {% elif page.id == "settings" %}
+    <section class="page-view">
+      <div class="section-heading"><div><p class="section-kicker">Settings</p><h2>Dashboard configuration</h2><p class="sub">Connection and strategy preferences are managed in the local server environment.</p></div></div>
+      <div class="settings-grid card pad"><div><span>Trading symbol</span><b>{{ trading_symbol }}</b></div><div><span>Execution mode</span><b id="settingsMode">Checking</b></div><div><span>Risk per trade</span><b>{{ risk_percent }}%</b></div><div><span>Maximum daily loss</span><b>{{ max_daily_loss_percent }}%</b></div><div><span>Maximum open positions</span><b>{{ max_open_positions }}</b></div></div>
+      <article class="card pad info-card"><i data-lucide="lock-keyhole"></i><div><b>Server-managed settings</b><p>Credentials and execution preferences are read from the server configuration and are never shown in this page.</p></div></article>
+    </section>
+    {% endif %}
+    <p class="page-message" id="pageMessage" role="status" hidden></p>
+  </main>
   <footer class="app-footer"><span>AGNTC TRADER</span><span>Prototype · Not investment advice · Verify every order</span><span id="foot">● Connecting</span></footer>
-</main>
+</div>
 
 <script>
 const CSRF=document.querySelector('meta[name="csrf-token"]').content;
-const money=(v,c="USD")=>{try{return new Intl.NumberFormat("en-US",{style:"currency",currency:c}).format(Number(v||0))}catch{return Number(v||0).toFixed(2)+" "+c}};
-let accountCurrency="USD";
-const setText=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
-function tone(id,v){const e=document.getElementById(id);e.classList.toggle("pos",v>0);e.classList.toggle("neg",v<0)}
-async function api(path,o={}){const r=await fetch(path,{...o,headers:{"Content-Type":"application/json","X-CSRF-Token":CSRF,...(o.headers||{})}});
-  const d=await r.json();if(!r.ok)throw new Error(d.error||"Request failed");return d}
-function rows(id,data,empty,cols){const b=document.getElementById(id);b.replaceChildren();
-  if(!data.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=cols.length;td.textContent=empty;tr.appendChild(td);b.appendChild(tr);return}
-  data.forEach(r=>{const tr=document.createElement("tr");cols.forEach(c=>{const td=document.createElement("td");td.textContent=c(r);tr.appendChild(td)});b.appendChild(tr)})}
-const f2=v=>v==null||v===0?"--":Number(v).toFixed(2);
-function setConnection(connected,server=""){
-  for(const id of ["connDot","sideConnDot"])document.getElementById(id).classList.toggle("off",!connected);
-  setText("connText",connected?"MT5 connected":"MT5 disconnected");
-  setText("sideConnText",connected?"MT5 connected":"MT5 disconnected");
-  setText("foot",connected?"● MT5 connected":"● MT5 disconnected");
-  setText("mt5Status",connected?"Connected":"Disconnected");
-  setText("mt5Detail",connected?"Terminal is responding":"Check that MT5 is open and logged in");
-  setText("brokerStatus",connected?"Connected":"Disconnected");
-  setText("brokerDetail",connected?(server||"Broker server connected"):"No broker connection through MT5");
-  for(const id of ["mt5Chip","brokerChip"]){const e=document.getElementById(id);e.className="status-chip "+(connected?"online":"offline");e.textContent=connected?"Online":"Offline"}
-  const selector=document.getElementById("accountSelector");selector.disabled=true;
-  if(connected){selector.replaceChildren(new Option("MT5 · "+document.getElementById("accountLogin").textContent,"current"));selector.title="Only the account logged in through the configured MT5 terminal is available."}
-  else selector.replaceChildren(new Option("No connected account",""));
+const pageId=document.body.dataset.page;
+let accountCurrency="USD",liveEnabled=false,chartCandles=[];
+const money=(value,currency=accountCurrency)=>{try{return new Intl.NumberFormat("en-US",{style:"currency",currency}).format(Number(value||0))}catch{return Number(value||0).toFixed(2)+" "+currency}};
+const setText=(id,value)=>{const element=document.getElementById(id);if(element)element.textContent=value};
+function tone(id,value){const element=document.getElementById(id);if(element){element.classList.toggle("pos",value>0);element.classList.toggle("neg",value<0)}}
+function showMessage(message){const element=document.getElementById("pageMessage");if(element){element.textContent=message;element.hidden=false}}
+async function api(path,options={}){
+  const response=await fetch(path,{...options,headers:{"Content-Type":"application/json","X-CSRF-Token":CSRF,...(options.headers||{})}});
+  const data=await response.json();if(!response.ok)throw new Error(data.error||"Request failed");return data
 }
-async function loadDashboard(){
-  let s;
+function tableRows(id,data,empty,columns){
+  const body=document.getElementById(id);if(!body)return;body.replaceChildren();
+  if(!data.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=columns.length;td.textContent=empty;tr.appendChild(td);body.appendChild(tr);return}
+  data.forEach(item=>{const tr=document.createElement("tr");columns.forEach(column=>{const td=document.createElement("td");td.textContent=column(item);tr.appendChild(td)});body.appendChild(tr)})
+}
+function setConnection(connected,account={},error=""){
+  for(const id of ["connDot","sideConnDot"]){const dot=document.getElementById(id);dot.classList.toggle("off",!connected)}
+  setText("connText",connected?"MT5 connected":"MT5 disconnected");setText("sideConnText",connected?"MT5 connected":"MT5 disconnected");
+  setText("foot",connected?"● MT5 connected":"● MT5 disconnected");
+  setText("mt5Status",connected?"Connected":"Disconnected");setText("brokerStatus",connected?"Connected":"Disconnected");
+  setText("mt5Detail",connected?"Terminal is responding":error||"Check that MT5 is open and logged in");
+  setText("brokerDetail",connected?(account.server||"Broker server connected"):"No broker connection through MT5");
+  for(const id of ["mt5Chip","brokerChip"]){const chip=document.getElementById(id);if(chip){chip.className="status-chip "+(connected?"online":"offline");chip.textContent=connected?"Online":"Offline"}}
+  const selector=document.getElementById("accountSelector");
+  if(selector){selector.disabled=true;selector.replaceChildren(new Option(connected?`MT5 · ${account.login}`:"No connected account",connected?"current":""))}
+  setText("accountLogin",account.login??"--");setText("accountServer",account.server||"--");setText("accountCurrency",account.currency||"--");
+  setText("accountConnection",connected?"Connected":"Disconnected");setText("settingsMode",liveEnabled?"Live execution configured":"Analysis only");
+  const notice=document.getElementById("notificationChip");if(notice){notice.className="status-chip "+(connected?"online":"offline");notice.textContent=connected?"Online":"Offline"}
+  setText("notificationTitle",connected?"Broker connection is online":"Broker connection is offline");
+  setText("notificationText",connected?`Connected to ${account.server||"the configured broker server"}.`:(error||"No active MT5 connection."));
+}
+async function loadStatus(){
   try{
-    s=await api("/api/status");if(!s.connected)throw new Error(s.error||"MT5 unavailable");
-  }catch(e){
-    setConnection(false);setText("marketNote",e.message);setText("automationChip","Unavailable");setText("automationStatus","Execution status is unavailable until MT5 connects.");
-    setText("noticeChip","Connection issue");setText("noticeText",e.message);return;
-  }
-  const a=s.account,m=s.market,cur=a.currency||"USD";accountCurrency=cur;
-  setText("accountLogin",a.login);
-  setConnection(true,a.server);setText("balance",money(a.balance,cur));setText("equity",money(a.equity,cur));
-  setText("floating",money(a.profit,cur));tone("floating",a.profit);
-  setText("symbol",m.symbol);setText("bid",Number(m.bid).toFixed(2));setText("ask",Number(m.ask).toFixed(2));
-  setText("spread",Number(m.spread).toFixed(1));setText("minLot",m.minimum_lot);setText("contractSize",m.contract_size);
-  setText("modeBadge",s.live_enabled?"MT5 · Live execution configured":"MT5 · Analysis mode");
-  setText("marketNote",s.live_enabled?"Live execution is configured. Each signal still needs your approval.":"Analysis mode: live order execution is disabled in server configuration.");
-  setText("accountServer",a.server||"--");setText("accountCurrency",cur);
-  setText("automationChip",s.live_enabled?"Live execution configured":"Analysis only");
-  setText("automationStatus",s.live_enabled?"Live execution is enabled; every trade still requires your approval.":"Live order execution is disabled. Signals are analysis only.");
-  setText("noticeChip","Account connected");setText("noticeText","MT5 and broker connection are responding normally.");
+    const status=await api("/api/status");if(!status.connected)throw new Error(status.error||"MT5 unavailable");
+    const account=status.account;accountCurrency=account.currency||"USD";liveEnabled=status.live_enabled;
+    setConnection(true,account);setText("modeBadge",liveEnabled?"MT5 · Live execution configured":"MT5 · Analysis mode");
+    setText("balance",money(account.balance));setText("equity",money(account.equity));setText("floating",money(account.profit));tone("floating",account.profit);
+    setText("bid",Number(status.market.bid).toFixed(2));setText("ask",Number(status.market.ask).toFixed(2));setText("spread",Number(status.market.spread).toFixed(1)+" points");
+    setText("chartMarketStatus","Live");setText("automationChip",liveEnabled?"Live execution configured":"Analysis only");
+    setText("automationStatus",liveEnabled?"Live execution is enabled; every trade still needs your approval.":"Live order execution is disabled. Signals are analysis only.");
+    setText("settingsMode",liveEnabled?"Live execution configured":"Analysis only");
+  }catch(error){liveEnabled=false;setConnection(false,{},error.message);showMessage(error.message);setText("chartMarketStatus","Unavailable")}
+}
+async function loadPerformance(){
   try{
-    const p=await api("/api/performance");
-    setText("totalProfit",money(p.total_realized_profit,cur));tone("totalProfit",p.total_realized_profit);
-    setText("todayProfit",money(p.realized_today,cur));setText("analyticsProfit",money(p.realized_today,cur));tone("todayProfit",p.realized_today);tone("analyticsProfit",p.realized_today);
-    setText("wins",p.wins);setText("losses",p.losses);setText("winRate",Number(p.win_rate).toFixed(1)+"%");
-    setText("analyticsWins",p.wins);setText("analyticsWinRate",Number(p.win_rate).toFixed(1)+"%");setText("closedTrades",p.closed_trades);
-  }catch(e){
-    setText("noticeChip","Performance unavailable");setText("noticeText",e.message);
-  }
-  await Promise.all([
-    loadSignals().catch(e=>{setText("noticeChip","Signals unavailable");setText("noticeText",e.message)}),
-    loadPositions(),loadTradeHistory()
-  ]);
+    const result=await api("/api/performance");
+    setText("totalProfit",money(result.total_realized_profit));tone("totalProfit",result.total_realized_profit);
+    setText("todayProfit",money(result.realized_today));tone("todayProfit",result.realized_today);
+    setText("wins",result.wins);setText("losses",result.losses);setText("winRate",Number(result.win_rate).toFixed(1)+"%");
+    setText("analyticsToday",money(result.realized_today));setText("analyticsTotal",money(result.total_realized_profit));
+    setText("analyticsWinRate",Number(result.win_rate).toFixed(1)+"%");setText("analyticsTrades",result.closed_trades);
+    setText("analyticsWinsLosses",`Wins ${result.wins} · Losses ${result.losses}`);
+    setText("reportToday",money(result.realized_today));setText("reportTrades",result.closed_trades);
+  }catch(error){showMessage("Performance data unavailable: "+error.message)}
 }
 async function loadPositions(){
-  try{const ps=await api("/api/positions");
-    rows("positionsBody",ps,"No open XAUUSD positions.",[p=>p.ticket,p=>p.type,p=>p.volume,p=>f2(p.entry),p=>f2(p.current_price),p=>f2(p.stop_loss),p=>f2(p.take_profit),p=>money(p.profit)])
-  }catch(e){setText("marketNote","Positions: "+e.message)}
+  try{const positions=await api("/api/positions");
+    tableRows("positionsBody",positions,"No open positions on this account.",[p=>p.ticket,p=>p.symbol||"XAUUSD",p=>p.type,p=>p.volume,p=>Number(p.entry).toFixed(2),p=>Number(p.current_price).toFixed(2),p=>p.stop_loss?Number(p.stop_loss).toFixed(2):"--",p=>p.take_profit?Number(p.take_profit).toFixed(2):"--",p=>money(p.profit)]);
+    document.querySelectorAll("#positionsBody tr").forEach((row,index)=>{if(positions[index]){if(positions[index].profit>0)row.lastChild.classList.add("pos");if(positions[index].profit<0)row.lastChild.classList.add("neg")}})
+  }catch(error){tableRows("positionsBody",[],"Positions unavailable: "+error.message,Array(9).fill(()=> ""))}
+}
+async function loadPendingOrders(){
+  try{const orders=await api("/api/pending-orders");
+    tableRows("ordersBody",orders,"No pending orders on this account.",[o=>o.ticket,o=>o.symbol,o=>o.type,o=>o.volume, o=>Number(o.price).toFixed(2),o=>o.stop_loss?Number(o.stop_loss).toFixed(2):"--",o=>o.take_profit?Number(o.take_profit).toFixed(2):"--",o=>new Date(o.time*1000).toLocaleString()]);
+  }catch(error){tableRows("ordersBody",[],"Pending orders unavailable: "+error.message,Array(8).fill(()=> ""))}
 }
 async function loadTradeHistory(){
   try{const deals=await api("/api/history");
-    rows("tradesBody",deals,"No closed trades found for this account.",[d=>new Date(d.time).toLocaleString("en-GB",{timeZone:"UTC"}),d=>d.ticket,d=>d.symbol||"--",d=>d.side,d=>d.volume,d=>f2(d.price),d=>money(d.profit,accountCurrency)]);
-    document.querySelectorAll("#tradesBody tr").forEach((tr,i)=>{if(deals[i]){if(deals[i].profit>0)tr.lastChild.classList.add("pos");if(deals[i].profit<0)tr.lastChild.classList.add("neg")}})
-  }catch(e){rows("tradesBody",[],"Trade history unavailable: "+e.message,[()=>"",()=>"",()=>"",()=>"",()=>"",()=>"",()=> ""])}
+    tableRows("tradesBody",deals,"No closed trades found for this account.",[d=>new Date(d.time).toLocaleString(),d=>d.ticket,d=>d.symbol||"--",d=>d.side,d=>d.volume, d=>Number(d.price).toFixed(2),d=>money(d.profit)]);
+    document.querySelectorAll("#tradesBody tr").forEach((row,index)=>{if(deals[index]){if(deals[index].profit>0)row.lastChild.classList.add("pos");if(deals[index].profit<0)row.lastChild.classList.add("neg")}})
+  }catch(error){tableRows("tradesBody",[],"Trade history unavailable: "+error.message,Array(7).fill(()=> ""))}
+}
+async function loadSignals(){
+  const box=document.getElementById("signalContainer");if(!box)return;
+  try{
+    const signals=await api("/api/signals"),pending=signals.filter(signal=>signal.status==="PENDING_APPROVAL");box.replaceChildren();
+    if(!pending.length){const empty=document.createElement("p");empty.className="empty";empty.textContent="No pending trade ideas.";box.appendChild(empty);return}
+    pending.forEach(signal=>{
+      const card=document.createElement("div");card.className="bub";
+      const created=document.createElement("small");created.textContent="AGNTC "+new Date(signal.created_at).toLocaleString();
+      const title=document.createElement("h4"),side=document.createElement("span");side.className=signal.side==="BUY"?"buy":"sell";side.textContent=signal.side;title.append(side," "+signal.symbol);
+      const levels=document.createElement("p");levels.className="mono";levels.textContent=`Entry ${Number(signal.entry).toFixed(2)} · SL ${Number(signal.stop_loss).toFixed(2)} · TP ${Number(signal.take_profit).toFixed(2)}`;
+      const reason=document.createElement("p");reason.className="fine";try{reason.textContent=JSON.parse(signal.reason||"[]").join(" ")}catch{reason.textContent=signal.reason||""}
+      const actions=document.createElement("div");actions.className="yn";
+      for(const [label,approved,style] of [["Approve",true,"p"],["Decline",false,"g"]]){const button=document.createElement("button");button.className=`btn ${style} sm`;button.textContent=label;button.addEventListener("click",()=>approveSignal(signal.id,approved));actions.appendChild(button)}
+      card.append(created,title,levels,reason,actions);box.appendChild(card)
+    });
+  }catch(error){box.replaceChildren();const message=document.createElement("p");message.className="empty";message.textContent="Signals unavailable: "+error.message;box.appendChild(message)}
 }
 async function scanMarket(){
-  const b=document.getElementById("scanBtn");b.disabled=true;b.textContent="Analysing...";
-  try{const r=await api("/api/scan",{method:"POST"});
-    setText("marketNote",r.side?r.side+" setup found. Review it under trade ideas.":"No qualifying setup right now.");await loadSignals()
-  }catch(e){setText("marketNote","Scan failed: "+e.message)}
-  finally{b.disabled=false;b.textContent="Scan for setup"}
+  const button=document.getElementById("scanBtn");if(button){button.disabled=true;button.textContent="Analysing…"}
+  try{const result=await api("/api/scan",{method:"POST"});setText("chartStatus",result.side?`${result.side} setup found`:"No qualifying setup");await loadSignals()}
+  catch(error){showMessage("Market scan failed: "+error.message)}
+  finally{if(button){button.disabled=false;button.textContent=pageId==="ai-analysis"?"Scan market":"Scan for setup"}}
 }
 async function approveSignal(id,approved){
   if(!confirm(approved?"Approve this signal? Risk checks run now. If live execution is enabled, a real order may be sent.":"Decline this signal?"))return;
-  try{const r=await api(`/api/approve/${id}`,{method:"POST",body:JSON.stringify({approved})});
-    setText("marketNote",r.message||r.status);await loadDashboard()
-  }catch(e){setText("marketNote","Trade action failed: "+e.message)}
+  try{const result=await api(`/api/approve/${id}`,{method:"POST",body:JSON.stringify({approved})});showMessage(result.message||result.status);await loadSignals()}
+  catch(error){showMessage("Trade action failed: "+error.message)}
 }
-async function loadSignals(){
-  const sigs=await api("/api/signals"),box=document.getElementById("signalContainer");box.replaceChildren();
-  const pend=sigs.filter(s=>s.status==="PENDING_APPROVAL");
-  if(!pend.length){const p=document.createElement("p");p.className="empty";p.textContent="No pending trade ideas.";box.appendChild(p)}
-  pend.forEach(s=>{
-    const d=document.createElement("div");d.className="bub";
-    const sm=document.createElement("small");sm.textContent="AGNTC "+new Date(s.created_at).toLocaleTimeString();
-    const h=document.createElement("h4");const side=document.createElement("span");side.className=s.side==="BUY"?"buy":"sell";side.textContent=s.side;h.append(side," "+s.symbol);
-    const p=document.createElement("p");p.className="mono";p.style.fontSize="12px";p.textContent=`Entry ${f2(s.entry)}   SL ${f2(s.stop_loss)}   TP ${f2(s.take_profit)}`;
-    const r=document.createElement("p");r.className="fine";try{r.textContent=JSON.parse(s.reason||"[]").join(" ")}catch{r.textContent=s.reason||""}
-    const yn=document.createElement("div");yn.className="yn";
-    const a=document.createElement("button");a.className="btn p sm";a.textContent="Approve";a.onclick=()=>approveSignal(s.id,true);
-    const n=document.createElement("button");n.className="btn g sm";n.textContent="Decline";n.onclick=()=>approveSignal(s.id,false);
-    yn.append(a,n);d.append(sm,h,p,r,yn);box.appendChild(d)});
+async function openMetaTrader(){
+  try{const result=await api("/api/open-metatrader",{method:"POST",body:"{}"});showMessage(result.message)}
+  catch(error){showMessage(error.message)}
 }
-document.querySelectorAll(".side-link").forEach(link=>link.addEventListener("click",()=>{
-  document.querySelectorAll(".side-link").forEach(item=>{item.classList.remove("active");item.removeAttribute("aria-current")});
-  link.classList.add("active");link.setAttribute("aria-current","page");
-  document.getElementById("sidebar").classList.remove("open");
-  document.querySelector(".mobile-menu").setAttribute("aria-expanded","false");
+async function loadCandles(timeframe){
+  const canvas=document.getElementById("marketChart");if(!canvas)return;
+  setText("chartStatus",`Loading ${timeframe}…`);
+  try{chartCandles=await api(`/api/candles?timeframe=${encodeURIComponent(timeframe)}`);setText("chartStatus",`${timeframe} · ${chartCandles.length} candles`);document.getElementById("chartEmpty").hidden=chartCandles.length>0;drawChart()}
+  catch(error){chartCandles=[];drawChart();setText("chartStatus",error.message);document.getElementById("chartEmpty").hidden=false;document.getElementById("chartEmpty").textContent=error.message}
+}
+function drawChart(){
+  const canvas=document.getElementById("marketChart");if(!canvas)return;
+  const rect=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;if(!rect.width||!rect.height)return;
+  canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
+  const ctx=canvas.getContext("2d");ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,rect.width,rect.height);
+  if(!chartCandles.length)return;
+  const pad={top:14,right:76,bottom:29,left:10},plotW=rect.width-pad.left-pad.right,plotH=rect.height-pad.top-pad.bottom;
+  const values=chartCandles.flatMap(candle=>[candle.high,candle.low]),min=Math.min(...values),max=Math.max(...values),range=max-min||Math.max(Math.abs(max)*.001,1);
+  const low=min-range*.05,high=max+range*.05,priceY=value=>pad.top+(high-value)/(high-low)*plotH;
+  ctx.font="11px JetBrains Mono, monospace";ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pad.top+plotH*i/4,price=high-(high-low)*i/4;ctx.strokeStyle="#2b3026";ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+plotW,y);ctx.stroke();ctx.fillStyle="#a3a99a";ctx.fillText(price.toFixed(2),pad.left+plotW+9,y+4)}
+  const step=plotW/chartCandles.length,bodyW=Math.max(1.5,Math.min(11,step*.62));
+  chartCandles.forEach((candle,index)=>{
+    const x=pad.left+step*(index+.5),up=candle.close>=candle.open,color=up?"#c6f400":"#ef766c",openY=priceY(candle.open),closeY=priceY(candle.close);
+    ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,priceY(candle.high));ctx.lineTo(x,priceY(candle.low));ctx.stroke();
+    ctx.fillRect(x-bodyW/2,Math.min(openY,closeY),bodyW,Math.max(1,Math.abs(closeY-openY)));
+  });
+  const last=chartCandles[chartCandles.length-1],label=value=>new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(value*1000));
+  ctx.fillStyle="#899082";ctx.textAlign="left";ctx.fillText(label(chartCandles[0].time),pad.left,rect.height-8);ctx.textAlign="right";ctx.fillText(label(last.time),pad.left+plotW,rect.height-8);ctx.textAlign="left";
+}
+document.querySelectorAll(".timeframe-btn").forEach(button=>button.addEventListener("click",()=>{
+  document.querySelectorAll(".timeframe-btn").forEach(item=>{item.classList.remove("selected");item.setAttribute("aria-pressed","false")});
+  button.classList.add("selected");button.setAttribute("aria-pressed","true");loadCandles(button.dataset.timeframe)
 }));
-document.querySelector(".mobile-menu").addEventListener("click",e=>{
-  const open=document.getElementById("sidebar").classList.toggle("open");e.currentTarget.setAttribute("aria-expanded",String(open))
+document.querySelector(".mobile-menu").addEventListener("click",event=>{
+  const isOpen=document.getElementById("sidebar").classList.toggle("open");event.currentTarget.setAttribute("aria-expanded",String(isOpen))
 });
-loadDashboard();setInterval(loadDashboard,10000);
+document.querySelectorAll(".side-link").forEach(link=>link.addEventListener("click",()=>document.getElementById("sidebar").classList.remove("open")));
+window.addEventListener("resize",drawChart);
+async function loadPage(){
+  await loadStatus();
+  if(["overview","performance-analytics","reports"].includes(pageId))await loadPerformance();
+  if(pageId==="open-positions")await loadPositions();
+  if(pageId==="pending-orders")await loadPendingOrders();
+  if(pageId==="trade-history")await loadTradeHistory();
+  if(["ai-analysis","trading-terminal"].includes(pageId))await loadSignals();
+  if(["market-watch","trading-terminal"].includes(pageId))await loadCandles("M5");
+}
+loadPage();
+setInterval(loadStatus,15000);
+if(["market-watch","trading-terminal"].includes(pageId))setInterval(()=>loadCandles(document.querySelector(".timeframe-btn.selected")?.dataset.timeframe||"M5"),30000);
 </script>
 <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 <script>if(window.lucide)lucide.createIcons();</script>

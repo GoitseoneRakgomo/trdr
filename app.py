@@ -1,4 +1,4 @@
-import os, json, hmac, secrets, sqlite3, re
+import os, json, hmac, secrets, sqlite3, re, subprocess
 from datetime import datetime, timezone
 from functools import wraps
 
@@ -12,7 +12,7 @@ try:
 except ImportError:
     pd = None
 
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from flask import Flask, abort, render_template, request, redirect, url_for, session, jsonify, flash
 from dotenv import load_dotenv
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -39,6 +39,24 @@ MAX_DAILY_LOSS_PERCENT = float(os.getenv("MAX_DAILY_LOSS_PERCENT", "2"))
 MAX_SPREAD_POINTS = int(os.getenv("MAX_SPREAD_POINTS", "80"))
 MAX_OPEN_POSITIONS = int(os.getenv("MAX_OPEN_POSITIONS", "1"))
 DB_PATH = os.getenv("DATABASE_PATH", "trading.db")
+SUPPORTED_TIMEFRAMES = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
+DASHBOARD_PAGES = [
+    {"id": "overview", "title": "Overview", "icon": "layout-dashboard"},
+    {"id": "trading-terminal", "title": "Trading Terminal", "icon": "candlestick-chart"},
+    {"id": "market-watch", "title": "Market Watch", "icon": "chart-no-axes-combined"},
+    {"id": "ai-analysis", "title": "AI Analysis", "icon": "sparkles"},
+    {"id": "automated-trading", "title": "Automated Trading", "icon": "bot"},
+    {"id": "open-positions", "title": "Open Positions", "icon": "layers-3"},
+    {"id": "pending-orders", "title": "Pending Orders", "icon": "list-plus"},
+    {"id": "trade-history", "title": "Trade History", "icon": "history"},
+    {"id": "performance-analytics", "title": "Performance Analytics", "icon": "chart-no-axes-column-increasing"},
+    {"id": "risk-management", "title": "Risk Management", "icon": "shield-check"},
+    {"id": "economic-calendar", "title": "Economic Calendar", "icon": "calendar-days"},
+    {"id": "account-management", "title": "Account Management", "icon": "wallet"},
+    {"id": "reports", "title": "Reports", "icon": "file-chart-column"},
+    {"id": "notifications", "title": "Notifications", "icon": "bell"},
+    {"id": "settings", "title": "Settings", "icon": "settings-2"},
+]
 
 
 # ---------- database ----------
@@ -223,7 +241,11 @@ def get_candles(tf, count=300):
     connect_mt5()
     if pd is None:
         raise RuntimeError("pandas is not installed. Install the project requirements to scan market data.")
-    frames = {"M1": mt5.TIMEFRAME_M1, "M5": mt5.TIMEFRAME_M5, "M15": mt5.TIMEFRAME_M15}
+    frames = {
+        "M1": mt5.TIMEFRAME_M1, "M5": mt5.TIMEFRAME_M5, "M15": mt5.TIMEFRAME_M15,
+        "M30": mt5.TIMEFRAME_M30, "H1": mt5.TIMEFRAME_H1, "H4": mt5.TIMEFRAME_H4,
+        "D1": mt5.TIMEFRAME_D1,
+    }
     rates = mt5.copy_rates_from_pos(SYMBOL, frames[tf], 0, count)
     if rates is None or len(rates) < 60:
         raise RuntimeError(f"Insufficient {tf} market data.")
@@ -351,10 +373,25 @@ def execute_approved_trade(signal):
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    return render_dashboard("overview")
+
+
+@app.route("/dashboard/<page_id>")
+@login_required
+def dashboard_page(page_id):
+    return render_dashboard(page_id)
+
+
+def render_dashboard(page_id):
+    page = next((item for item in DASHBOARD_PAGES if item["id"] == page_id), None)
+    if page is None:
+        abort(404)
     return render_template("dashboard.html", csrf_token=session["csrf_token"],
+                           pages=DASHBOARD_PAGES, page=page,
                            risk_percent=RISK_PERCENT,
                            max_daily_loss_percent=MAX_DAILY_LOSS_PERCENT,
-                           max_open_positions=MAX_OPEN_POSITIONS)
+                           max_open_positions=MAX_OPEN_POSITIONS,
+                           trading_symbol=SYMBOL)
 
 
 @app.route("/api/status")
@@ -374,6 +411,49 @@ def api_status():
             "live_enabled": LIVE_TRADING_ENABLED})
     except Exception as e:
         return jsonify({"connected": False, "error": str(e)}), 503
+
+
+@app.route("/api/candles")
+@login_required
+def api_candles():
+    timeframe = request.args.get("timeframe", "M5")
+    if timeframe not in SUPPORTED_TIMEFRAMES:
+        return jsonify({"error": f"Unsupported timeframe. Choose one of: {', '.join(SUPPORTED_TIMEFRAMES)}."}), 400
+    try:
+        data = get_candles(timeframe, count=120)
+        return jsonify([{
+            "time": int(row["time"]),
+            "open": float(row["open"]),
+            "high": float(row["high"]),
+            "low": float(row["low"]),
+            "close": float(row["close"]),
+        } for _, row in data.iterrows()])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/open-metatrader", methods=["POST"])
+@login_required
+def api_open_metatrader():
+    if not valid_csrf():
+        return jsonify({"error": "Invalid security token"}), 400
+    try:
+        terminal_path = MT5_PATH
+        if not terminal_path and mt5 is not None:
+            terminal = mt5.terminal_info()
+            terminal_path = getattr(terminal, "path", "") if terminal else ""
+        if not terminal_path:
+            raise RuntimeError("Set MT5_PATH in the server configuration to open MetaTrader from the dashboard.")
+        executable = os.path.abspath(terminal_path)
+        if os.path.isdir(executable):
+            executable = next((os.path.join(executable, name) for name in
+                               ("terminal64.exe", "terminal.exe") if os.path.isfile(os.path.join(executable, name))), "")
+        if not executable or not os.path.isfile(executable):
+            raise RuntimeError("The configured MetaTrader terminal could not be found.")
+        subprocess.Popen([executable], close_fds=True)
+        return jsonify({"message": "MetaTrader launch requested."})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @app.route("/api/signals")
@@ -432,6 +512,38 @@ def api_positions():
                          "volume": p.volume, "entry": p.price_open, "current_price": p.price_current,
                          "stop_loss": p.sl, "take_profit": p.tp, "profit": p.profit}
                         for p in (mt5.positions_get(symbol=SYMBOL) or [])])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/pending-orders")
+@login_required
+def api_pending_orders():
+    try:
+        if mt5 is None:
+            raise RuntimeError("MetaTrader5 is not installed. Install the project requirements to retrieve pending orders.")
+        connect_mt5()
+        orders = mt5.orders_get()
+        if orders is None:
+            raise RuntimeError("Unable to retrieve pending orders.")
+        types = {
+            mt5.ORDER_TYPE_BUY_LIMIT: "Buy limit",
+            mt5.ORDER_TYPE_SELL_LIMIT: "Sell limit",
+            mt5.ORDER_TYPE_BUY_STOP: "Buy stop",
+            mt5.ORDER_TYPE_SELL_STOP: "Sell stop",
+            mt5.ORDER_TYPE_BUY_STOP_LIMIT: "Buy stop limit",
+            mt5.ORDER_TYPE_SELL_STOP_LIMIT: "Sell stop limit",
+        }
+        return jsonify([{
+            "ticket": order.ticket,
+            "symbol": order.symbol,
+            "type": types.get(order.type, "Pending"),
+            "volume": order.volume_initial,
+            "price": order.price_open,
+            "stop_loss": order.sl,
+            "take_profit": order.tp,
+            "time": int(order.time_setup),
+        } for order in orders])
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 

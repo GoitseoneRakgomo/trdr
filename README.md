@@ -1,12 +1,12 @@
 # AGNTC Gold Trader
 
-Flask dashboard for monitoring an Exness MT5 account and reviewing XAUUSD setups. The desktop dashboard includes left-side navigation, account and connection status, open positions, and recent closed MT5 trades.
+Flask dashboard for monitoring an Exness MT5 account and reviewing XAUUSD setups. The desktop dashboard has 15 individually routed navigation pages, account and connection status, and separate views for positions and trade history. Market Watch includes a live candlestick chart with M1, M5, M15, M30, H1, H4 and D1 timeframes.
 
 ## Run (Windows)
 1. Install Python 3.10+ (64-bit) and MetaTrader 5; log into an Exness DEMO account; confirm the gold symbol in Market Watch.
 2. `python -m venv venv` then `.\venv\Scripts\Activate.ps1`
 3. `pip install -r requirements.txt`
-4. `Copy-Item .env.example .env` and set a strong SECRET_KEY (leave MT5 credentials blank if the terminal is already logged in). The `DASHBOARD_USERNAME` and `DASHBOARD_PASSWORD` values remain available as an administrator login.
+4. `Copy-Item .env.example .env` and set a strong SECRET_KEY (leave MT5 credentials blank if the terminal is already logged in). Set `MT5_PATH` to the terminal executable or its containing folder to enable the dashboard's **Open MetaTrader** button. The `DASHBOARD_USERNAME` and `DASHBOARD_PASSWORD` values remain available as an administrator login.
 5. `python app.py` and open http://127.0.0.1:5000. Choose **Create account** to register a dashboard user, or **Log in** to use an existing account.
 
 If MetaTrader5 or pandas is unavailable, the login and dashboard UI can still start, but account data and market scans will remain unavailable until the project requirements are installed.
