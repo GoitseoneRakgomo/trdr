@@ -12,7 +12,7 @@
 <body class="dashboard-page" data-page="{{ page.id }}">
 <a class="skip-link" href="#pageContent">Skip to page content</a>
 <nav class="sidebar" id="sidebar" aria-label="Main navigation">
-  <a class="logo" href="{{ url_for('dashboard') }}"><span class="mark">Au</span><span>AGNTC<br>TRADER</span></a>
+  <a class="logo" href="{{ url_for('dashboard') }}"><img class="brand-logo" src="{{ url_for('static', filename='agntc-logo.png') }}" alt=""><span>AGNTC<br>TRADER</span></a>
   <p class="side-label">Main navigation</p>
   <div class="side-links">
     {% for item in pages %}

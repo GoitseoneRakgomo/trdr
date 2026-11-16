@@ -21,7 +21,7 @@ i[data-lucide],svg.lucide{width:16px;height:16px;stroke-width:1.75;flex:none}
 nav{position:sticky;top:0;z-index:20;background:rgba(9,9,9,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 nav .wrap{display:flex;align-items:center;gap:32px;height:64px}
 .logo{display:flex;align-items:center;gap:12px;font-weight:600;font-size:15px;letter-spacing:.04em}
-.logo .mark{width:28px;height:28px;border-radius:6px;border:1px solid var(--silver);color:var(--silver);display:grid;place-items:center;font:600 12px var(--mono)}
+.logo .brand-logo{width:42px;height:30px;object-fit:contain;flex:none}
 nav .links{display:flex;gap:24px;font-size:14px;color:var(--mute);margin-left:24px}
 nav .links a{transition:color .2s}
 nav .links a:hover{color:var(--tx)}
@@ -130,7 +130,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .skip-link:focus{top:12px}
 .dashboard-page .sidebar{position:fixed;inset:0 auto 0 0;width:254px;z-index:30;display:flex;flex-direction:column;padding:23px 15px 16px;background:var(--sidebar);border-right:1px solid var(--line)}
 .dashboard-page .logo{gap:11px;padding:0 10px 20px;font-size:12px;line-height:1.35;letter-spacing:.13em}
-.dashboard-page .logo .mark{width:34px;height:34px;border-radius:9px;background:var(--accent);border:0;color:#14110b;font-size:13px}
+.dashboard-page .logo .brand-logo{width:42px;height:32px}
 .side-label{margin:8px 10px 9px;color:#717171;font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase}
 .side-links{display:flex;flex-direction:column;gap:3px;overflow-y:auto;scrollbar-width:thin}
 .side-link{min-height:37px;display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid transparent;border-radius:7px;color:#a6a6a6;font-size:12px;transition:background .15s,color .15s}
