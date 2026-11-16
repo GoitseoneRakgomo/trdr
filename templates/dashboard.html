@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<title>AGNTC Trader — Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dashboard-page">
+<a class="skip-link" href="#overview">Skip to dashboard</a>
+<nav class="sidebar" id="sidebar" aria-label="Main navigation">
+  <a class="logo" href="#overview"><span class="mark">Au</span><span>AGNTC<br>TRADER</span></a>
+  <p class="side-label">Main navigation</p>
+  <div class="side-links">
+    <a class="side-link active" href="#overview" aria-current="page"><i data-lucide="layout-dashboard"></i><span>Overview</span></a>
+    <a class="side-link" href="#terminal"><i data-lucide="candlestick-chart"></i><span>Trading Terminal</span><span class="side-num">02</span></a>
+    <a class="side-link" href="#market"><i data-lucide="chart-no-axes-combined"></i><span>Market Watch</span><span class="side-num">03</span></a>
+    <a class="side-link" href="#analysis"><i data-lucide="sparkles"></i><span>AI Analysis</span><span class="side-num">04</span></a>
+    <a class="side-link" href="#automation"><i data-lucide="bot"></i><span>Automated Trading</span><span class="side-num">05</span></a>
+    <a class="side-link" href="#positions"><i data-lucide="layers-3"></i><span>Open Positions</span><span class="side-num">06</span></a>
+    <a class="side-link" href="#pending-orders"><i data-lucide="list-plus"></i><span>Pending Orders</span><span class="side-num">07</span></a>
+    <a class="side-link" href="#history"><i data-lucide="history"></i><span>Trade History</span><span class="side-num">08</span></a>
+    <a class="side-link" href="#analytics"><i data-lucide="chart-no-axes-column-increasing"></i><span>Performance Analytics</span><span class="side-num">09</span></a>
+    <a class="side-link" href="#risk"><i data-lucide="shield-check"></i><span>Risk Management</span><span class="side-num">10</span></a>
+    <a class="side-link" href="#calendar"><i data-lucide="calendar-days"></i><span>Economic Calendar</span><span class="side-num">11</span></a>
+    <a class="side-link" href="#accounts"><i data-lucide="wallet"></i><span>Account Management</span><span class="side-num">12</span></a>
+    <a class="side-link" href="#reports"><i data-lucide="file-chart-column"></i><span>Reports</span><span class="side-num">13</span></a>
+    <a class="side-link" href="#notifications"><i data-lucide="bell"></i><span>Notifications</span><span class="side-num">14</span></a>
+    <a class="side-link" href="#settings"><i data-lucide="settings-2"></i><span>Settings</span><span class="side-num">15</span></a>
+  </div>
+  <div class="side-bottom">
+    <div class="side-connection"><span class="dot off" id="sideConnDot"></span><span id="sideConnText">Connecting to MT5</span></div>
+    <form action="/logout" method="POST"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn g sm logout-btn" type="submit"><i data-lucide="log-out"></i>Log out</button></form>
+  </div>
+</nav>
+
+<main class="app-main">
+  <header class="topbar">
+    <button class="mobile-menu" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar"><i data-lucide="menu"></i></button>
+    <div><span class="eyebrow">Desktop application · Main navigation</span><h1>Overview</h1></div>
+    <div class="topbar-actions">
+      <div class="connection-badge"><span class="dot off" id="connDot"></span><span id="connText">Connecting</span></div>
+      <label class="account-select-wrap" for="accountSelector"><span>Trading account</span><select id="accountSelector" disabled><option>Checking connection…</option></select></label>
+    </div>
+  </header>
+
+  <div class="content">
+    <section class="overview-section" id="overview">
+      <div class="welcome-row">
+        <div><p class="section-kicker">Account snapshot</p><h2>Your trading account</h2><p class="sub">Balance, equity and connection health for the active MT5 terminal account.</p></div>
+        <span class="pill tag" id="modeBadge">MT5 · Analysis mode</span>
+      </div>
+      <div class="connection-grid">
+        <article class="connection-card card">
+          <div class="connection-icon"><i data-lucide="monitor-check"></i></div>
+          <div><span>MetaTrader 5 terminal</span><b id="mt5Status">Checking connection</b><small id="mt5Detail">Waiting for terminal status</small></div>
+          <span class="status-chip pending" id="mt5Chip">Checking</span>
+        </article>
+        <article class="connection-card card">
+          <div class="connection-icon broker-icon">EX</div>
+          <div><span>Exness / broker server</span><b id="brokerStatus">Checking connection</b><small id="brokerDetail">Waiting for broker status</small></div>
+          <span class="status-chip pending" id="brokerChip">Checking</span>
+        </article>
+      </div>
+      <div class="stats" style="margin-top:16px">
+        <article class="card stat-card"><span><i data-lucide="landmark"></i>Balance</span><b id="balance">--</b><small>Broker-reported funds</small></article>
+        <article class="card stat-card"><span><i data-lucide="scale"></i>Equity</span><b id="equity">--</b><small>Balance plus floating P/L</small></article>
+        <article class="card stat-card"><span><i data-lucide="trending-up"></i>Realised P/L</span><b id="totalProfit">--</b><small>Closed trades, all history</small></article>
+        <article class="card stat-card"><span><i data-lucide="activity"></i>Floating P/L</span><b id="floating">--</b><small>Open positions</small></article>
+      </div>
+      <article class="card pad today-card">
+        <div class="head"><div><h3>Today at a glance</h3><p>Closed trades recorded by the broker today.</p></div><span class="pill">TODAY</span></div>
+        <div class="perf">
+          <div><span>Realised P/L</span><b id="todayProfit">--</b></div>
+          <div><span>Wins</span><b id="wins">0</b></div>
+          <div><span>Losses</span><b id="losses">0</b></div>
+          <div><span>Win rate</span><b id="winRate">0%</b></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="module-section" id="terminal">
+      <div class="section-heading"><div><p class="section-kicker">02 · Trading Terminal</p><h2>XAUUSD trading desk</h2></div><button class="btn p" id="scanBtn" onclick="scanMarket()"><i data-lucide="scan-search"></i>Scan for setup</button></div>
+      <article class="card pad" id="market">
+        <div class="eyebrow"><i data-lucide="chart-no-axes-combined"></i>Market Watch · XAUUSD</div>
+        <div class="mkt">
+          <div><span>Symbol</span><b id="symbol">XAUUSD</b></div><div><span>Bid</span><b id="bid">--</b></div><div><span>Ask</span><b id="ask">--</b></div>
+          <div><span>Spread (points)</span><b id="spread">--</b></div><div><span>Minimum lot</span><b id="minLot">--</b></div><div><span>Contract size</span><b id="contractSize">--</b></div>
+        </div>
+        <div class="note" id="marketNote">Waiting for MT5 market data…</div>
+      </article>
+    </section>
+
+    <section class="module-section" id="analysis">
+      <div class="section-heading"><div><p class="section-kicker">04 · AI Analysis</p><h2>Trade ideas</h2><p class="sub">Each setup needs your approval. Risk and margin checks run before any order.</p></div></div>
+      <article class="card pad" id="signalContainer"><p class="empty">No pending trade ideas.</p></article>
+    </section>
+
+    <section class="module-section" id="automation">
+      <div class="section-heading"><div><p class="section-kicker">05 · Automated Trading</p><h2>Execution status</h2></div></div>
+      <article class="card pad automation-card"><span class="status-chip" id="automationChip">Checking</span><p id="automationStatus">Checking live execution configuration…</p><small>Orders are never sent without your approval.</small></article>
+    </section>
+
+    <section class="module-section" id="positions">
+      <div class="section-heading"><div><p class="section-kicker">06 · Open Positions</p><h2>Active trades</h2></div></div>
+      <article class="card pad"><div class="tw"><table><thead><tr><th>Ticket</th><th>Side</th><th>Volume</th><th>Entry</th><th>Current</th><th>SL</th><th>TP</th><th>Floating P/L</th></tr></thead><tbody id="positionsBody"><tr><td colspan="8">Waiting for account data…</td></tr></tbody></table></div></article>
+    </section>
+
+    <section class="module-section" id="pending-orders">
+      <div class="section-heading"><div><p class="section-kicker">07 · Pending Orders</p><h2>Pending orders</h2></div></div>
+      <article class="card pad empty-module"><i data-lucide="list-plus"></i><p>Pending order monitoring is not available in this build.</p></article>
+    </section>
+
+    <section class="module-section" id="history">
+      <div class="section-heading"><div><p class="section-kicker">08 · Trade History</p><h2>Historical trades</h2><p class="sub">Recent closed trade executions reported by the connected MT5 account.</p></div><button class="btn g sm" type="button" onclick="loadTradeHistory()">Refresh history</button></div>
+      <article class="card pad"><div class="tw"><table><thead><tr><th>Closed (UTC)</th><th>Ticket</th><th>Symbol</th><th>Side</th><th>Volume</th><th>Close price</th><th>Net P/L</th></tr></thead><tbody id="tradesBody"><tr><td colspan="7">Waiting for account data…</td></tr></tbody></table></div></article>
+    </section>
+
+    <section class="module-section" id="analytics">
+      <div class="section-heading"><div><p class="section-kicker">09 · Performance Analytics</p><h2>Daily performance</h2></div></div>
+      <article class="card pad analytics-card"><div class="perf">
+        <div><span>Realised today</span><b id="analyticsProfit">--</b></div><div><span>Closed trades</span><b id="closedTrades">0</b></div>
+        <div><span>Wins</span><b id="analyticsWins">0</b></div><div><span>Win rate</span><b id="analyticsWinRate">0%</b></div>
+      </div><p class="fine">Drawdown, profit factor and equity curve analytics are not available in this build.</p></article>
+    </section>
+
+    <section class="module-section" id="risk">
+      <div class="section-heading"><div><p class="section-kicker">10 · Risk Management</p><h2>Risk controls</h2></div></div>
+      <article class="card pad risk-card"><div><span>Risk per trade</span><b>{{ risk_percent }}%</b></div><div><span>Daily loss limit</span><b>{{ max_daily_loss_percent }}%</b></div><div><span>Maximum open positions</span><b>{{ max_open_positions }}</b></div></article>
+    </section>
+
+    <section class="module-section" id="calendar">
+      <div class="section-heading"><div><p class="section-kicker">11 · Economic Calendar</p><h2>Market events</h2></div></div>
+      <article class="card pad empty-module"><i data-lucide="calendar-days"></i><p>Economic calendar data is not connected.</p></article>
+    </section>
+
+    <section class="module-section" id="accounts">
+      <div class="section-heading"><div><p class="section-kicker">12 · Account Management</p><h2>Connected account</h2></div></div>
+      <article class="card pad account-details">
+        <div><span>Account number</span><b id="accountLogin">--</b></div><div><span>Broker server</span><b id="accountServer">--</b></div>
+        <div><span>Currency</span><b id="accountCurrency">--</b></div><div><span>Account selection</span><b>Single MT5 terminal account</b></div>
+        <p>Only the account currently logged in to the MT5 terminal is available. To use another account, switch it in the MT5 terminal first.</p>
+      </article>
+    </section>
+
+    <section class="module-section" id="reports">
+      <div class="section-heading"><div><p class="section-kicker">13 · Reports</p><h2>Performance reports</h2></div></div>
+      <article class="card pad empty-module"><i data-lucide="file-chart-column"></i><p>Daily, weekly and monthly report exports are not available in this build.</p></article>
+    </section>
+
+    <section class="module-section" id="notifications">
+      <div class="section-heading"><div><p class="section-kicker">14 · Notifications</p><h2>System status</h2></div></div>
+      <article class="card pad automation-card"><span class="status-chip pending" id="noticeChip">Checking</span><p id="noticeText">Checking account and terminal status…</p></article>
+    </section>
+
+    <section class="module-section" id="settings">
+      <div class="section-heading"><div><p class="section-kicker">15 · Settings</p><h2>Trading preferences</h2></div></div>
+      <article class="card pad empty-module"><i data-lucide="settings-2"></i><p>Connection and strategy preferences are managed in the server configuration.</p></article>
+    </section>
+  </div>
+  <footer class="app-footer"><span>AGNTC TRADER</span><span>Prototype · Not investment advice · Verify every order</span><span id="foot">● Connecting</span></footer>
+</main>
+
+<script>
+const CSRF=document.querySelector('meta[name="csrf-token"]').content;
+const money=(v,c="USD")=>{try{return new Intl.NumberFormat("en-US",{style:"currency",currency:c}).format(Number(v||0))}catch{return Number(v||0).toFixed(2)+" "+c}};
+let accountCurrency="USD";
+const setText=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+function tone(id,v){const e=document.getElementById(id);e.classList.toggle("pos",v>0);e.classList.toggle("neg",v<0)}
+async function api(path,o={}){const r=await fetch(path,{...o,headers:{"Content-Type":"application/json","X-CSRF-Token":CSRF,...(o.headers||{})}});
+  const d=await r.json();if(!r.ok)throw new Error(d.error||"Request failed");return d}
+function rows(id,data,empty,cols){const b=document.getElementById(id);b.replaceChildren();
+  if(!data.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=cols.length;td.textContent=empty;tr.appendChild(td);b.appendChild(tr);return}
+  data.forEach(r=>{const tr=document.createElement("tr");cols.forEach(c=>{const td=document.createElement("td");td.textContent=c(r);tr.appendChild(td)});b.appendChild(tr)})}
+const f2=v=>v==null||v===0?"--":Number(v).toFixed(2);
+function setConnection(connected,server=""){
+  for(const id of ["connDot","sideConnDot"])document.getElementById(id).classList.toggle("off",!connected);
+  setText("connText",connected?"MT5 connected":"MT5 disconnected");
+  setText("sideConnText",connected?"MT5 connected":"MT5 disconnected");
+  setText("foot",connected?"● MT5 connected":"● MT5 disconnected");
+  setText("mt5Status",connected?"Connected":"Disconnected");
+  setText("mt5Detail",connected?"Terminal is responding":"Check that MT5 is open and logged in");
+  setText("brokerStatus",connected?"Connected":"Disconnected");
+  setText("brokerDetail",connected?(server||"Broker server connected"):"No broker connection through MT5");
+  for(const id of ["mt5Chip","brokerChip"]){const e=document.getElementById(id);e.className="status-chip "+(connected?"online":"offline");e.textContent=connected?"Online":"Offline"}
+  const selector=document.getElementById("accountSelector");selector.disabled=true;
+  if(connected){selector.replaceChildren(new Option("MT5 · "+document.getElementById("accountLogin").textContent,"current"));selector.title="Only the account logged in through the configured MT5 terminal is available."}
+  else selector.replaceChildren(new Option("No connected account",""));
+}
+async function loadDashboard(){
+  let s;
+  try{
+    s=await api("/api/status");if(!s.connected)throw new Error(s.error||"MT5 unavailable");
+  }catch(e){
+    setConnection(false);setText("marketNote",e.message);setText("automationChip","Unavailable");setText("automationStatus","Execution status is unavailable until MT5 connects.");
+    setText("noticeChip","Connection issue");setText("noticeText",e.message);return;
+  }
+  const a=s.account,m=s.market,cur=a.currency||"USD";accountCurrency=cur;
+  setText("accountLogin",a.login);
+  setConnection(true,a.server);setText("balance",money(a.balance,cur));setText("equity",money(a.equity,cur));
+  setText("floating",money(a.profit,cur));tone("floating",a.profit);
+  setText("symbol",m.symbol);setText("bid",Number(m.bid).toFixed(2));setText("ask",Number(m.ask).toFixed(2));
+  setText("spread",Number(m.spread).toFixed(1));setText("minLot",m.minimum_lot);setText("contractSize",m.contract_size);
+  setText("modeBadge",s.live_enabled?"MT5 · Live execution configured":"MT5 · Analysis mode");
+  setText("marketNote",s.live_enabled?"Live execution is configured. Each signal still needs your approval.":"Analysis mode: live order execution is disabled in server configuration.");
+  setText("accountServer",a.server||"--");setText("accountCurrency",cur);
+  setText("automationChip",s.live_enabled?"Live execution configured":"Analysis only");
+  setText("automationStatus",s.live_enabled?"Live execution is enabled; every trade still requires your approval.":"Live order execution is disabled. Signals are analysis only.");
+  setText("noticeChip","Account connected");setText("noticeText","MT5 and broker connection are responding normally.");
+  try{
+    const p=await api("/api/performance");
+    setText("totalProfit",money(p.total_realized_profit,cur));tone("totalProfit",p.total_realized_profit);
+    setText("todayProfit",money(p.realized_today,cur));setText("analyticsProfit",money(p.realized_today,cur));tone("todayProfit",p.realized_today);tone("analyticsProfit",p.realized_today);
+    setText("wins",p.wins);setText("losses",p.losses);setText("winRate",Number(p.win_rate).toFixed(1)+"%");
+    setText("analyticsWins",p.wins);setText("analyticsWinRate",Number(p.win_rate).toFixed(1)+"%");setText("closedTrades",p.closed_trades);
+  }catch(e){
+    setText("noticeChip","Performance unavailable");setText("noticeText",e.message);
+  }
+  await Promise.all([
+    loadSignals().catch(e=>{setText("noticeChip","Signals unavailable");setText("noticeText",e.message)}),
+    loadPositions(),loadTradeHistory()
+  ]);
+}
+async function loadPositions(){
+  try{const ps=await api("/api/positions");
+    rows("positionsBody",ps,"No open XAUUSD positions.",[p=>p.ticket,p=>p.type,p=>p.volume,p=>f2(p.entry),p=>f2(p.current_price),p=>f2(p.stop_loss),p=>f2(p.take_profit),p=>money(p.profit)])
+  }catch(e){setText("marketNote","Positions: "+e.message)}
+}
+async function loadTradeHistory(){
+  try{const deals=await api("/api/history");
+    rows("tradesBody",deals,"No closed trades found for this account.",[d=>new Date(d.time).toLocaleString("en-GB",{timeZone:"UTC"}),d=>d.ticket,d=>d.symbol||"--",d=>d.side,d=>d.volume,d=>f2(d.price),d=>money(d.profit,accountCurrency)]);
+    document.querySelectorAll("#tradesBody tr").forEach((tr,i)=>{if(deals[i]){if(deals[i].profit>0)tr.lastChild.classList.add("pos");if(deals[i].profit<0)tr.lastChild.classList.add("neg")}})
+  }catch(e){rows("tradesBody",[],"Trade history unavailable: "+e.message,[()=>"",()=>"",()=>"",()=>"",()=>"",()=>"",()=> ""])}
+}
+async function scanMarket(){
+  const b=document.getElementById("scanBtn");b.disabled=true;b.textContent="Analysing...";
+  try{const r=await api("/api/scan",{method:"POST"});
+    setText("marketNote",r.side?r.side+" setup found. Review it under trade ideas.":"No qualifying setup right now.");await loadSignals()
+  }catch(e){setText("marketNote","Scan failed: "+e.message)}
+  finally{b.disabled=false;b.textContent="Scan for setup"}
+}
+async function approveSignal(id,approved){
+  if(!confirm(approved?"Approve this signal? Risk checks run now. If live execution is enabled, a real order may be sent.":"Decline this signal?"))return;
+  try{const r=await api(`/api/approve/${id}`,{method:"POST",body:JSON.stringify({approved})});
+    setText("marketNote",r.message||r.status);await loadDashboard()
+  }catch(e){setText("marketNote","Trade action failed: "+e.message)}
+}
+async function loadSignals(){
+  const sigs=await api("/api/signals"),box=document.getElementById("signalContainer");box.replaceChildren();
+  const pend=sigs.filter(s=>s.status==="PENDING_APPROVAL");
+  if(!pend.length){const p=document.createElement("p");p.className="empty";p.textContent="No pending trade ideas.";box.appendChild(p)}
+  pend.forEach(s=>{
+    const d=document.createElement("div");d.className="bub";
+    const sm=document.createElement("small");sm.textContent="AGNTC "+new Date(s.created_at).toLocaleTimeString();
+    const h=document.createElement("h4");const side=document.createElement("span");side.className=s.side==="BUY"?"buy":"sell";side.textContent=s.side;h.append(side," "+s.symbol);
+    const p=document.createElement("p");p.className="mono";p.style.fontSize="12px";p.textContent=`Entry ${f2(s.entry)}   SL ${f2(s.stop_loss)}   TP ${f2(s.take_profit)}`;
+    const r=document.createElement("p");r.className="fine";try{r.textContent=JSON.parse(s.reason||"[]").join(" ")}catch{r.textContent=s.reason||""}
+    const yn=document.createElement("div");yn.className="yn";
+    const a=document.createElement("button");a.className="btn p sm";a.textContent="Approve";a.onclick=()=>approveSignal(s.id,true);
+    const n=document.createElement("button");n.className="btn g sm";n.textContent="Decline";n.onclick=()=>approveSignal(s.id,false);
+    yn.append(a,n);d.append(sm,h,p,r,yn);box.appendChild(d)});
+}
+document.querySelectorAll(".side-link").forEach(link=>link.addEventListener("click",()=>{
+  document.querySelectorAll(".side-link").forEach(item=>{item.classList.remove("active");item.removeAttribute("aria-current")});
+  link.classList.add("active");link.setAttribute("aria-current","page");
+  document.getElementById("sidebar").classList.remove("open");
+  document.querySelector(".mobile-menu").setAttribute("aria-expanded","false");
+}));
+document.querySelector(".mobile-menu").addEventListener("click",e=>{
+  const open=document.getElementById("sidebar").classList.toggle("open");e.currentTarget.setAttribute("aria-expanded",String(open))
+});
+loadDashboard();setInterval(loadDashboard,10000);
+</script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>if(window.lucide)lucide.createIcons();</script>
+</body>
+</html>

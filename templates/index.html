@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AGNTC — Gold Trader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="landing-page">
+<canvas id="bg" aria-hidden="true"></canvas>
+<nav><div class="wrap">
+  <a class="logo" href="{{ url_for('landing') }}"><i>Au</i>AGNTC</a>
+  <div class="sp"></div>
+  {% if session.get('logged_in') %}
+    <a class="btn g sm" href="{{ url_for('dashboard') }}">Open dashboard</a>
+  {% else %}
+    <a class="btn g sm" href="{{ url_for('login') }}">Log in</a>
+  {% endif %}
+</div></nav>
+
+<main>
+  <header class="landing-hero">
+    <div class="wrap landing-layout">
+      <div>
+        <span class="pill tag"><span class="dot"></span>human-approved gold trading</span>
+        <h1>A clearer view of gold.<br><em>A human in control.</em></h1>
+        <p class="lead">Monitor XAUUSD, review risk-aware trade ideas, and stay in control of every decision with the AGNTC trading dashboard.</p>
+        <div class="landing-actions">
+          {% if session.get('logged_in') %}
+            <a class="btn p" href="{{ url_for('dashboard') }}">Open dashboard <span aria-hidden="true">→</span></a>
+          {% else %}
+            <a class="btn p" href="{{ url_for('register') }}">Create account <span aria-hidden="true">→</span></a>
+            <a class="btn g" href="{{ url_for('login') }}">Log in</a>
+          {% endif %}
+        </div>
+        <p class="fine landing-note">Every trade requires your approval. Live execution is off by default.</p>
+      </div>
+      <aside class="card landing-card" aria-label="AGNTC product features">
+        <span class="eyebrow">your gold desk</span>
+        <div class="landing-feature"><span class="feature-mark">01</span><div><b>Market context</b><p>Keep an eye on XAUUSD and account status.</p></div></div>
+        <div class="landing-feature"><span class="feature-mark">02</span><div><b>Risk-aware setups</b><p>Review entry, stop and target before acting.</p></div></div>
+        <div class="landing-feature"><span class="feature-mark">03</span><div><b>You decide</b><p>No trade is sent without your approval.</p></div></div>
+        <div class="landing-card-foot"><span class="dot off"></span>human approval required</div>
+      </aside>
+    </div>
+  </header>
+</main>
+
+<footer><div class="wrap"><span>AGNTC Gold Trader</span><span>Prototype · not investment advice · verify every order</span><span>Analysis mode</span></div></footer>
+<script src="{{ url_for('static', filename='bg.js') }}"></script>
+</body>
+</html>

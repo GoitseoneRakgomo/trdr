@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AGNTC — Sign in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<nav><div class="wrap">
+  <a class="logo" href="{{ url_for('landing') }}"><i>Au</i>AGNTC</a>
+  <div class="sp"></div>
+  <span class="pill"><span class="dot"></span>analysis mode</span>
+  <a class="btn g sm" href="{{ url_for('register') }}">Create account</a>
+</div></nav>
+<main class="auth">
+  <div class="card">
+    <span class="pill tag">exness / metatrader 5 / xauusd</span>
+    <h2>Gold, with a <em>human</em> in the loop.</h2>
+    <p class="fine">Sign in to open your trading terminal.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}<div class="alert">{{ message }}</div>{% endfor %}
+    {% endwith %}
+    <form method="POST" action="{{ url_for('login') }}">
+      <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+      <label for="username">username</label>
+      <input id="username" name="username" autocomplete="username" required>
+      <label for="password">password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button class="btn p" type="submit">Sign in</button>
+    </form>
+    <p class="fine auth-switch">Need an account? <a href="{{ url_for('register') }}">Create one</a></p>
+  </div>
+</main>
+<script src="{{ url_for('static', filename='bg.js') }}"></script>
+</body>
+</html>
