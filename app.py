@@ -203,35 +203,47 @@ def logout():
 
 
 # ---------- MT5 ----------
-def connect_mt5():
+def require_mt5():
     if mt5 is None:
         raise RuntimeError("MetaTrader5 is not installed. Install the project requirements to connect to a trading account.")
-    if mt5.terminal_info() is not None:
+    return mt5
+
+
+def require_pandas():
+    if pd is None:
+        raise RuntimeError("pandas is not installed. Install the project requirements to process market data.")
+    return pd
+
+
+def connect_mt5():
+    terminal = require_mt5()
+    if terminal.terminal_info() is not None:
         return True
     kwargs = {"path": MT5_PATH} if MT5_PATH else {}
-    if not mt5.initialize(**kwargs):
-        raise RuntimeError(f"MT5 initialization failed: {mt5.last_error()}")
+    if not terminal.initialize(**kwargs):
+        raise RuntimeError(f"MT5 initialization failed: {terminal.last_error()}")
     if MT5_LOGIN and MT5_PASSWORD and MT5_SERVER:
-        if not mt5.login(int(MT5_LOGIN), password=MT5_PASSWORD, server=MT5_SERVER):
-            err = mt5.last_error()
-            mt5.shutdown()
+        if not terminal.login(int(MT5_LOGIN), password=MT5_PASSWORD, server=MT5_SERVER):
+            err = terminal.last_error()
+            terminal.shutdown()
             raise RuntimeError(f"MT5 login failed: {err}")
     return True
 
 
 def get_symbol_info():
     connect_mt5()
-    info = mt5.symbol_info(SYMBOL)
+    terminal = require_mt5()
+    info = terminal.symbol_info(SYMBOL)
     if info is None:
         raise RuntimeError(f"Symbol '{SYMBOL}' not found. Check the exact Exness symbol name.")
-    if not info.visible and not mt5.symbol_select(SYMBOL, True):
+    if not info.visible and not terminal.symbol_select(SYMBOL, True):
         raise RuntimeError(f"Could not enable {SYMBOL} in Market Watch.")
-    return mt5.symbol_info(SYMBOL)
+    return terminal.symbol_info(SYMBOL)
 
 
 def get_account():
     connect_mt5()
-    a = mt5.account_info()
+    a = require_mt5().account_info()
     if a is None:
         raise RuntimeError("Unable to retrieve MT5 account information.")
     return a._asdict()
@@ -239,20 +251,20 @@ def get_account():
 
 def get_candles(tf, count=300):
     connect_mt5()
-    if pd is None:
-        raise RuntimeError("pandas is not installed. Install the project requirements to scan market data.")
+    terminal, pandas = require_mt5(), require_pandas()
     frames = {
-        "M1": mt5.TIMEFRAME_M1, "M5": mt5.TIMEFRAME_M5, "M15": mt5.TIMEFRAME_M15,
-        "M30": mt5.TIMEFRAME_M30, "H1": mt5.TIMEFRAME_H1, "H4": mt5.TIMEFRAME_H4,
-        "D1": mt5.TIMEFRAME_D1,
+        "M1": terminal.TIMEFRAME_M1, "M5": terminal.TIMEFRAME_M5, "M15": terminal.TIMEFRAME_M15,
+        "M30": terminal.TIMEFRAME_M30, "H1": terminal.TIMEFRAME_H1, "H4": terminal.TIMEFRAME_H4,
+        "D1": terminal.TIMEFRAME_D1,
     }
-    rates = mt5.copy_rates_from_pos(SYMBOL, frames[tf], 0, count)
+    rates = terminal.copy_rates_from_pos(SYMBOL, frames[tf], 0, count)
     if rates is None or len(rates) < 60:
         raise RuntimeError(f"Insufficient {tf} market data.")
-    return pd.DataFrame(rates)
+    return pandas.DataFrame(rates)
 
 
 def calculate_indicators(df):
+    pandas = require_pandas()
     df = df.copy()
     df["ema9"] = df["close"].ewm(span=9, adjust=False).mean()
     df["ema21"] = df["close"].ewm(span=21, adjust=False).mean()
@@ -261,17 +273,18 @@ def calculate_indicators(df):
     loss = (-d.clip(upper=0)).ewm(alpha=1 / 14, adjust=False).mean()
     df["rsi"] = 100 - (100 / (1 + gain / loss.replace(0, float("nan"))))
     pc = df["close"].shift(1)
-    tr = pd.concat([df["high"] - df["low"], (df["high"] - pc).abs(), (df["low"] - pc).abs()], axis=1).max(axis=1)
+    tr = pandas.concat([df["high"] - df["low"], (df["high"] - pc).abs(), (df["low"] - pc).abs()], axis=1).max(axis=1)
     df["atr"] = tr.ewm(alpha=1 / 14, adjust=False).mean()
     return df
 
 
 def generate_signal():
+    terminal = require_mt5()
     m1 = calculate_indicators(get_candles("M1"))
     m5 = calculate_indicators(get_candles("M5"))
     m15 = calculate_indicators(get_candles("M15"))
     a, b, c = m1.iloc[-2], m5.iloc[-2], m15.iloc[-2]  # completed candles only
-    quote = mt5.symbol_info_tick(SYMBOL)
+    quote = terminal.symbol_info_tick(SYMBOL)
     info = get_symbol_info()
     if quote is None:
         raise RuntimeError("Market quote unavailable.")
@@ -300,11 +313,12 @@ def generate_signal():
 
 
 def calculate_position_size(side, entry, stop_loss):
+    terminal = require_mt5()
     account, info = get_account(), get_symbol_info()
     risk = account["equity"] * RISK_PERCENT / 100
-    ot = mt5.ORDER_TYPE_BUY if side == "BUY" else mt5.ORDER_TYPE_SELL
+    ot = terminal.ORDER_TYPE_BUY if side == "BUY" else terminal.ORDER_TYPE_SELL
     vmin, vmax, step = info.volume_min, info.volume_max, info.volume_step
-    min_loss = mt5.order_calc_profit(ot, SYMBOL, vmin, entry, stop_loss)
+    min_loss = terminal.order_calc_profit(ot, SYMBOL, vmin, entry, stop_loss)
     if min_loss is None:
         raise RuntimeError("Broker could not calculate minimum-lot risk.")
     min_loss = abs(min_loss)
@@ -313,25 +327,26 @@ def calculate_position_size(side, entry, stop_loss):
     vol = vmin
     for n in range(int((vmax - vmin) / step) + 1):
         cand = round(vmin + n * step, 8)
-        l = mt5.order_calc_profit(ot, SYMBOL, cand, entry, stop_loss)
+        l = terminal.order_calc_profit(ot, SYMBOL, cand, entry, stop_loss)
         if l is None or abs(l) > risk:
             break
         vol = cand
-    est = abs(mt5.order_calc_profit(ot, SYMBOL, vol, entry, stop_loss))
-    margin = mt5.order_calc_margin(ot, SYMBOL, vol, entry)
+    est = abs(terminal.order_calc_profit(ot, SYMBOL, vol, entry, stop_loss))
+    margin = terminal.order_calc_margin(ot, SYMBOL, vol, entry)
     if margin is None or margin > account["margin_free"]:
         raise ValueError("Insufficient free margin for this order.")
     return {"volume": vol, "estimated_loss": est, "risk_budget": risk, "margin_required": margin}
 
 
 def daily_loss_check():
+    terminal = require_mt5()
     account = get_account()
     now = datetime.now(timezone.utc)
     start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    deals = mt5.history_deals_get(start, now)
+    deals = terminal.history_deals_get(start, now)
     if deals is None:
         raise RuntimeError("Unable to retrieve daily trading history.")
-    realized = sum(d.profit + d.commission + d.swap + d.fee for d in deals if d.entry == mt5.DEAL_ENTRY_OUT)
+    realized = sum(d.profit + d.commission + d.swap + d.fee for d in deals if d.entry == terminal.DEAL_ENTRY_OUT)
     if realized <= -(account["balance"] * MAX_DAILY_LOSS_PERCENT / 100):
         raise ValueError("Daily realized-loss limit reached.")
     return realized
@@ -340,30 +355,31 @@ def daily_loss_check():
 def execute_approved_trade(signal):
     if not LIVE_TRADING_ENABLED:
         raise RuntimeError("Live trading is disabled in .env.")
+    terminal = require_mt5()
     if not get_account()["trade_allowed"]:
         raise RuntimeError("Trading is not permitted by the MT5 account.")
     daily_loss_check()
-    if len(mt5.positions_get(symbol=SYMBOL) or []) >= MAX_OPEN_POSITIONS:
+    if len(terminal.positions_get(symbol=SYMBOL) or []) >= MAX_OPEN_POSITIONS:
         raise RuntimeError("Maximum open positions reached.")
     sizing = calculate_position_size(signal["side"], signal["entry"], signal["stop_loss"])
-    quote = mt5.symbol_info_tick(SYMBOL)
-    ot = mt5.ORDER_TYPE_BUY if signal["side"] == "BUY" else mt5.ORDER_TYPE_SELL
-    req = {"action": mt5.TRADE_ACTION_DEAL, "symbol": SYMBOL, "volume": sizing["volume"], "type": ot,
+    quote = terminal.symbol_info_tick(SYMBOL)
+    ot = terminal.ORDER_TYPE_BUY if signal["side"] == "BUY" else terminal.ORDER_TYPE_SELL
+    req = {"action": terminal.TRADE_ACTION_DEAL, "symbol": SYMBOL, "volume": sizing["volume"], "type": ot,
            "price": quote.ask if signal["side"] == "BUY" else quote.bid,
            "sl": signal["stop_loss"], "tp": signal["take_profit"], "deviation": 30,
-           "magic": 26091109, "comment": "AGNTC manual-approved trade", "type_time": mt5.ORDER_TIME_GTC}
+           "magic": 26091109, "comment": "AGNTC manual-approved trade", "type_time": terminal.ORDER_TIME_GTC}
     result, last_error = None, None
-    for filling in (mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_RETURN):
+    for filling in (terminal.ORDER_FILLING_IOC, terminal.ORDER_FILLING_FOK, terminal.ORDER_FILLING_RETURN):
         req["type_filling"] = filling
-        check = mt5.order_check(req)
+        check = terminal.order_check(req)
         if check is None or check.retcode != 0:
             last_error = str(check)
             continue
-        result = mt5.order_send(req)
-        if result is not None and result.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED):
+        result = terminal.order_send(req)
+        if result is not None and result.retcode in (terminal.TRADE_RETCODE_DONE, terminal.TRADE_RETCODE_PLACED):
             break
         last_error = str(result)
-    if result is None or result.retcode not in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED):
+    if result is None or result.retcode not in (terminal.TRADE_RETCODE_DONE, terminal.TRADE_RETCODE_PLACED):
         raise RuntimeError(f"Order was not executed: {last_error}")
     return {"ticket": result.order, "volume": sizing["volume"],
             "estimated_loss": sizing["estimated_loss"], "result": result._asdict()}
@@ -398,8 +414,9 @@ def render_dashboard(page_id):
 @login_required
 def api_status():
     try:
+        terminal = require_mt5()
         acc, info = get_account(), get_symbol_info()
-        q = mt5.symbol_info_tick(SYMBOL)
+        q = terminal.symbol_info_tick(SYMBOL)
         if q is None:
             raise RuntimeError("No current quote available.")
         return jsonify({
@@ -407,7 +424,7 @@ def api_status():
             "account": {k: acc[k] for k in ("login", "balance", "equity", "profit", "currency", "server")},
             "market": {"symbol": SYMBOL, "bid": q.bid, "ask": q.ask, "spread": (q.ask - q.bid) / info.point,
                        "minimum_lot": info.volume_min, "contract_size": info.trade_contract_size},
-            "open_positions": len(mt5.positions_get(symbol=SYMBOL) or []),
+            "open_positions": len(terminal.positions_get(symbol=SYMBOL) or []),
             "live_enabled": LIVE_TRADING_ENABLED})
     except Exception as e:
         return jsonify({"connected": False, "error": str(e)}), 503
@@ -506,12 +523,11 @@ def api_approve(signal_id):
 @login_required
 def api_positions():
     try:
-        if mt5 is None:
-            raise RuntimeError("MetaTrader5 is not installed. Install the project requirements to retrieve positions.")
-        return jsonify([{"ticket": p.ticket, "type": "BUY" if p.type == mt5.POSITION_TYPE_BUY else "SELL",
+        terminal = require_mt5()
+        return jsonify([{"ticket": p.ticket, "type": "BUY" if p.type == terminal.POSITION_TYPE_BUY else "SELL",
                          "volume": p.volume, "entry": p.price_open, "current_price": p.price_current,
                          "stop_loss": p.sl, "take_profit": p.tp, "profit": p.profit}
-                        for p in (mt5.positions_get(symbol=SYMBOL) or [])])
+                        for p in (terminal.positions_get(symbol=SYMBOL) or [])])
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -520,19 +536,18 @@ def api_positions():
 @login_required
 def api_pending_orders():
     try:
-        if mt5 is None:
-            raise RuntimeError("MetaTrader5 is not installed. Install the project requirements to retrieve pending orders.")
+        terminal = require_mt5()
         connect_mt5()
-        orders = mt5.orders_get()
+        orders = terminal.orders_get()
         if orders is None:
             raise RuntimeError("Unable to retrieve pending orders.")
         types = {
-            mt5.ORDER_TYPE_BUY_LIMIT: "Buy limit",
-            mt5.ORDER_TYPE_SELL_LIMIT: "Sell limit",
-            mt5.ORDER_TYPE_BUY_STOP: "Buy stop",
-            mt5.ORDER_TYPE_SELL_STOP: "Sell stop",
-            mt5.ORDER_TYPE_BUY_STOP_LIMIT: "Buy stop limit",
-            mt5.ORDER_TYPE_SELL_STOP_LIMIT: "Sell stop limit",
+            terminal.ORDER_TYPE_BUY_LIMIT: "Buy limit",
+            terminal.ORDER_TYPE_SELL_LIMIT: "Sell limit",
+            terminal.ORDER_TYPE_BUY_STOP: "Buy stop",
+            terminal.ORDER_TYPE_SELL_STOP: "Sell stop",
+            terminal.ORDER_TYPE_BUY_STOP_LIMIT: "Buy stop limit",
+            terminal.ORDER_TYPE_SELL_STOP_LIMIT: "Sell stop limit",
         }
         return jsonify([{
             "ticket": order.ticket,
@@ -552,17 +567,16 @@ def api_pending_orders():
 @login_required
 def api_performance():
     try:
-        if mt5 is None:
-            raise RuntimeError("MetaTrader5 is not installed. Install the project requirements to retrieve performance.")
+        terminal = require_mt5()
         acc = get_account()
         now = datetime.now(timezone.utc)
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        all_d, today_d = mt5.history_deals_get(0, now), mt5.history_deals_get(start, now)
+        all_d, today_d = terminal.history_deals_get(0, now), terminal.history_deals_get(start, now)
         if all_d is None or today_d is None:
             raise RuntimeError("Unable to retrieve account deal history.")
         net = lambda d: d.profit + d.commission + d.swap + d.fee
-        ca = [d for d in all_d if d.entry == mt5.DEAL_ENTRY_OUT]
-        ct = [d for d in today_d if d.entry == mt5.DEAL_ENTRY_OUT]
+        ca = [d for d in all_d if d.entry == terminal.DEAL_ENTRY_OUT]
+        ct = [d for d in today_d if d.entry == terminal.DEAL_ENTRY_OUT]
         wins, losses = sum(1 for d in ct if net(d) > 0), sum(1 for d in ct if net(d) < 0)
         return jsonify({"balance": acc["balance"], "equity": acc["equity"], "floating_profit": acc["profit"],
                         "total_realized_profit": sum(net(d) for d in ca), "realized_today": sum(net(d) for d in ct),
@@ -576,20 +590,19 @@ def api_performance():
 @login_required
 def api_history():
     try:
-        if mt5 is None:
-            raise RuntimeError("MetaTrader5 is not installed. Install the project requirements to retrieve trade history.")
+        terminal = require_mt5()
         connect_mt5()
-        deals = mt5.history_deals_get(0, datetime.now(timezone.utc))
+        deals = terminal.history_deals_get(0, datetime.now(timezone.utc))
         if deals is None:
             raise RuntimeError("Unable to retrieve account deal history.")
-        close_entries = (mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_OUT_BY, mt5.DEAL_ENTRY_INOUT)
+        close_entries = (terminal.DEAL_ENTRY_OUT, terminal.DEAL_ENTRY_OUT_BY, terminal.DEAL_ENTRY_INOUT)
         closed = [d for d in deals if d.entry in close_entries]
         closed.sort(key=lambda d: d.time, reverse=True)
         return jsonify([{
             "ticket": d.ticket,
             "time": datetime.fromtimestamp(d.time, timezone.utc).isoformat(),
             "symbol": d.symbol,
-            "side": "BUY" if d.type == mt5.DEAL_TYPE_BUY else "SELL",
+            "side": "BUY" if d.type == terminal.DEAL_TYPE_BUY else "SELL",
             "volume": d.volume,
             "price": d.price,
             "profit": d.profit + d.commission + d.swap + d.fee,
